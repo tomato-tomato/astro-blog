@@ -1,0 +1,12 @@
+# Cloudflare Pages / Workers 静态资源共用：public/_headers 会被复制到 dist/_headers，
+# 由 Cloudflare 解析后作用于静态资源响应（本身不会作为文件被访问）。
+# 限制：最多 100 条规则，单行最长 2000 字符。
+
+# 为什么这里**不需要**给 /_astro/* 加 immutable 规则？
+# Cloudflare 对文件名带 hash 的静态资源会自动下发一年期 immutable 缓存（实测 astro.build
+# 上 /_astro/*.js 返回 cache-control: max-age=31536000, immutable, public）。
+# 手工再写一条只会在平台默认值变化时制造冲突，所以保持精简。
+
+# 显式声明 HTML 的浏览器缓存策略：允许边缘缓存，但强制浏览器每次协商（与平台默认一致）
+/*.html
+	Cache-Control: public, max-age=0, must-revalidate

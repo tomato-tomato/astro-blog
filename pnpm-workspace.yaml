@@ -1,6 +1,9 @@
-allowBuilds:
-  esbuild: set this to true or false
-  sharp: set this to true or false
+# 仅保留 pnpm 新版（>=11）才认识的高级配置项。
+#
+# ⚠️ 不要把依赖构建白名单（allowBuilds / onlyBuiltDependencies）写在这里：
+# Cloudflare Workers/Pages 构建镜像默认使用 pnpm 10.11.1，而 pnpm 10 **不认** allowBuilds，
+# 一旦拦截到构建脚本就直接以 exit 1 结束安装步骤（本地已实测复现）。
+# 该白名单统一放在 package.json 的 "pnpm.onlyBuiltDependencies"，pnpm 10 与 pnpm 12 都能识别（两者均已实测）。
 minimumReleaseAgeExclude:
   - '@astrojs/internal-helpers@0.13.0'
   - '@astrojs/markdown-satteri@0.4.4'

@@ -1,0 +1,16 @@
+{
+	// Cloudflare Workers（静态资源）项目配置。
+	// - 走 Workers + Workers Builds 时，这份文件是必须的：它告诉 Wrangler 去哪里找静态产出。
+	// - 走 Cloudflare Pages 时这份文件被忽略，Pages 用面板里的 “Build output directory = dist”。
+	// 官方文档：https://developers.cloudflare.com/workers/framework-guides/web-apps/astro/
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// ⚠️ 必须与 Cloudflare 面板里的 Worker 名称完全一致，否则 Workers Builds 会直接构建失败
+	"name": "astro-blog",
+	// 建议改为“当天日期”，这是 Workers 运行时行为的兼容性开关
+	"compatibility_date": "2026-10-16",
+	"assets": {
+		"directory": "./dist",
+		// 有 src/pages/404.astro 时，未匹配的路径会返回 404.html（否则是 Cloudflare 默认 404 页）
+		"not_found_handling": "404-page"
+	}
+}

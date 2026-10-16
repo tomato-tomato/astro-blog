@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Sitemap 用相对路径：robots.txt 必须位于站点根目录，相对路径会被解析成
+# https://你的地址/sitemap-index.xml。这样换域名（workers.dev → 自定义域名）不用改这个文件。
+Sitemap: /sitemap-index.xml
