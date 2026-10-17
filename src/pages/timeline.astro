@@ -1,0 +1,402 @@
+---
+/*
+ * 时间轴。
+ *
+ * 呈现形式参考 newechoes 的 TimelineView：
+ *   顶部标签区 → sticky 年份条 → 按「年 / 月」分组，每条 = 文档图标 + 标题(+标签) + 日期
+ *
+ * 与 newechoes 的差异：
+ *   - 去掉了「发布时间轴 / 修订记录」双视图（我们没有 Git 历史数据源）
+ *   - 顶部多了一块标签区（需求：顶部要展示所有标签）
+ *   - 每个条目的标题后面直接跟标签，且标签不可点（条目整体是一个链接，不能嵌套 a）
+ */
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import PageHeader from '../components/PageHeader.astro';
+import TagList from '../components/TagList.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import {
+	getPosts,
+	groupByTag,
+	groupByYearMonth,
+	postHref,
+	MONTH_NAMES,
+} from '../lib/posts';
+
+const posts = await getPosts();
+const years = groupByYearMonth(posts);
+const tags = groupByTag(posts);
+
+function formatDay(d: Date): string {
+	return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`时间轴 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main class="wide">
+			<PageHeader title="时间轴" meta={`共 ${posts.length} 篇`} />
+
+			{
+				tags.length > 0 && (
+					<section class="timeline-tags" aria-label="全部标签">
+						<div class="timeline-tags-head">
+							<h2>标签</h2>
+							<a href="/tags">全部标签 →</a>
+						</div>
+						<TagList tags={tags.map((t) => t.name)} />
+					</section>
+				)
+			}
+
+			{
+				years.length > 0 && (
+					<nav class="timeline-year-strip" aria-label="年份索引">
+						<span class="timeline-strip-label">年份</span>
+						<div class="timeline-year-links">
+							{years.map((y) => (
+								<a href={`#year-${y.year}`}>
+									<span>{y.year}</span>
+									<small>{y.count}</small>
+								</a>
+							))}
+						</div>
+					</nav>
+				)
+			}
+
+			{
+				years.length > 0 ? (
+					<div class="timeline">
+						{years.map((y) => (
+							<section id={`year-${y.year}`} class="timeline-year" aria-label={`${y.year} 年`}>
+								<div class="timeline-year-heading">
+									<p>{y.year}</p>
+									<span>{y.count} 篇记录</span>
+								</div>
+
+								{y.months.map((m) => (
+									<div class="month-group">
+										<div class="month-label">
+											<span>{MONTH_NAMES[m.month]}</span>
+											<small>{m.posts.length} 篇</small>
+										</div>
+										<div class="timeline-list">
+											{m.posts.map((post) => (
+												<a class="timeline-item" href={postHref(post)}>
+													<svg class="timeline-icon" viewBox="0 0 40 44" fill="none" aria-hidden="true">
+														<path d="M9 4h15l7 7v29H9V4Z" stroke="currentColor" stroke-width="1.5" />
+														<path d="M24 4v8h7" stroke="currentColor" stroke-width="1.5" />
+														<path d="M14 20h12M14 26h12M14 32h7" stroke="currentColor" stroke-width="1.5" />
+													</svg>
+													<span class="timeline-copy">
+														<span class="timeline-title-row">
+															<strong>{post.data.title}</strong>
+															<TagList
+																tags={post.data.tags}
+																max={4}
+																linkable={false}
+																class="timeline-item-tags"
+															/>
+														</span>
+														<span class="timeline-summary">{post.data.description}</span>
+													</span>
+													<time class="timeline-date" datetime={post.data.pubDate.toISOString()}>
+														{formatDay(post.data.pubDate)}
+													</time>
+												</a>
+											))}
+										</div>
+									</div>
+								))}
+							</section>
+						))}
+					</div>
+				) : (
+					<p>还没有文章。</p>
+				)
+			}
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	/* ---------- 顶部标签区 ---------- */
+	.timeline-tags {
+		margin-bottom: 2.5rem;
+		padding: 1.1rem 1.25rem 1.25rem;
+		border: 1px solid var(--c-line);
+		border-radius: var(--r-md);
+	}
+
+	.timeline-tags-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.5rem 1rem;
+		margin-bottom: 0.9rem;
+	}
+
+	.timeline-tags-head h2 {
+		margin: 0;
+		font-size: var(--t-ui);
+		font-weight: var(--w-medium);
+		color: var(--c-ink);
+	}
+
+	.timeline-tags-head a {
+		font-size: var(--t-small);
+		color: var(--c-quiet);
+		text-decoration: none;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.timeline-tags-head a:hover {
+		color: var(--c-accent);
+	}
+
+	/* ---------- sticky 年份条 ---------- */
+	.timeline-year-strip {
+		position: sticky;
+		top: 56px; /* 让开 sticky 页头的高度 */
+		z-index: 20;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 1.25rem;
+		align-items: center;
+		margin: 0 0 2.5rem;
+		padding: 0.7rem 0;
+		border-bottom: 1px solid var(--c-line);
+		background: color-mix(in oklab, var(--c-bg) 94%, transparent);
+		-webkit-backdrop-filter: blur(14px);
+		backdrop-filter: blur(14px);
+	}
+
+	.timeline-strip-label {
+		color: var(--c-quiet);
+		font-size: var(--t-meta);
+		font-weight: var(--w-medium);
+		letter-spacing: 0.04em;
+	}
+
+	.timeline-year-links {
+		display: flex;
+		gap: 0.35rem;
+		min-width: 0;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		padding: 0.1rem 0;
+		scrollbar-width: thin;
+	}
+
+	.timeline-year-links a {
+		display: inline-grid;
+		grid-template-columns: auto auto;
+		gap: 0.4rem;
+		align-items: baseline;
+		flex: 0 0 auto;
+		padding: 0.4rem 0.6rem;
+		border-radius: var(--r-sm);
+		color: var(--c-muted);
+		font-size: var(--t-ui);
+		text-decoration: none;
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			color var(--dur-fast) var(--ease);
+	}
+
+	.timeline-year-links a:hover {
+		color: var(--c-ink);
+		background: var(--c-soft-strong);
+	}
+
+	.timeline-year-links small {
+		color: var(--c-quiet);
+		font-size: var(--t-meta);
+	}
+
+	/* ---------- 时间轴主体 ---------- */
+	.timeline {
+		display: grid;
+		gap: 3rem;
+	}
+
+	.timeline-year {
+		display: grid;
+		gap: 1.75rem;
+		scroll-margin-top: 7.5rem;
+	}
+
+	.timeline-year-heading {
+		display: grid;
+		grid-template-columns: 150px minmax(0, 1fr);
+		gap: 2rem;
+		align-items: end;
+	}
+
+	.timeline-year-heading p {
+		margin: 0;
+		color: var(--c-quiet);
+		font-size: 2rem;
+		font-weight: var(--w-bold);
+		line-height: 1;
+	}
+
+	.timeline-year-heading span {
+		padding-bottom: 0.25rem;
+		border-bottom: 1px solid var(--c-line);
+		color: var(--c-muted);
+		font-size: var(--t-meta);
+		line-height: 1.3;
+	}
+
+	.month-group {
+		display: grid;
+		grid-template-columns: 150px minmax(0, 1fr);
+		gap: 2rem;
+		align-items: start;
+	}
+
+	.month-label {
+		position: sticky;
+		top: 8.5rem;
+		display: grid;
+		gap: 0.35rem;
+		color: var(--c-ink);
+	}
+
+	.month-label span {
+		font-size: var(--t-h3);
+		font-weight: var(--w-bold);
+		line-height: 1.16;
+	}
+
+	.month-label small {
+		color: var(--c-quiet);
+		font-size: var(--t-meta);
+		line-height: 1;
+	}
+
+	.timeline-list {
+		display: grid;
+		min-width: 0;
+	}
+
+	.timeline-item {
+		display: grid;
+		grid-template-columns: 42px minmax(0, 1fr) 74px;
+		gap: 1rem;
+		align-items: start;
+		min-height: 78px;
+		padding: 0.9rem 0;
+		border-bottom: 1px solid var(--c-line);
+		color: inherit;
+		text-decoration: none;
+		transition: border-color var(--dur-fast) var(--ease);
+	}
+
+	.timeline-item:hover,
+	.timeline-item:focus-visible {
+		border-bottom-color: var(--c-line-strong);
+	}
+
+	.timeline-icon {
+		width: 32px;
+		height: 35px;
+		color: var(--c-quiet);
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.timeline-item:hover .timeline-icon,
+	.timeline-item:focus-visible .timeline-icon {
+		color: var(--c-ink);
+	}
+
+	.timeline-copy {
+		display: grid;
+		gap: 0.3rem;
+		min-width: 0;
+	}
+
+	.timeline-title-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.timeline-title-row strong {
+		color: var(--c-ink);
+		font-size: var(--t-card-title);
+		font-weight: var(--w-bold);
+		line-height: 1.36;
+		overflow-wrap: anywhere;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.timeline-item:hover .timeline-title-row strong {
+		color: var(--c-accent);
+	}
+
+	.timeline-item-tags {
+		/* TagList 自带 margin/padding 归零，这里只压缩一下尺寸 */
+		gap: 0.25rem;
+	}
+
+	.timeline-summary {
+		color: var(--c-muted);
+		font-size: var(--t-small);
+		line-height: var(--lh-dense);
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 1;
+		line-clamp: 1;
+	}
+
+	.timeline-date {
+		justify-self: end;
+		color: var(--c-quiet);
+		font-size: var(--t-meta);
+		line-height: 1.25;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 720px) {
+		.timeline-year-heading,
+		.month-group {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.75rem;
+		}
+
+		.month-label {
+			position: static;
+			grid-auto-flow: column;
+			justify-content: start;
+			align-items: baseline;
+			gap: 0.5rem;
+		}
+
+		.timeline-item {
+			grid-template-columns: 32px minmax(0, 1fr);
+			gap: 0.75rem;
+		}
+
+		.timeline-date {
+			grid-column: 2;
+			justify-self: start;
+		}
+
+		.timeline {
+			gap: 2rem;
+		}
+	}
+</style>

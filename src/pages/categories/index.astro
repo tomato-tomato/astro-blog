@@ -1,0 +1,100 @@
+---
+/*
+ * 分类总览。卡片形态取自旧博客（vuepress-theme-reco）首页右侧的分类列表：
+ * 左侧分类名，右侧文章数徽章。
+ */
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
+import { getPosts, groupByCategory } from '../../lib/posts';
+
+const posts = await getPosts();
+const categories = groupByCategory(posts);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`分类 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main class="wide">
+			<PageHeader title="分类" meta={`共 ${categories.length} 个`} />
+			{
+				categories.length > 0 ? (
+					<ul class="category-grid">
+						{categories.map((c) => (
+							<li>
+								<a class="category-card" href={`/categories/${c.name}`}>
+									<span class="category-card-name">{c.name}</span>
+									<span class="category-card-count">{c.count}</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				) : (
+					<p>还没有分类。</p>
+				)
+			}
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.category-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+		gap: 1rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.category-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.9rem 1.1rem;
+		border: 1px solid var(--c-line);
+		border-radius: var(--r-md);
+		color: var(--c-ink);
+		text-decoration: none;
+		transition:
+			border-color var(--dur-fast) var(--ease),
+			color var(--dur-fast) var(--ease);
+	}
+
+	.category-card:hover {
+		border-color: var(--c-line-strong);
+		color: var(--c-accent);
+	}
+
+	.category-card-name {
+		font-size: var(--t-ui);
+		font-weight: var(--w-medium);
+	}
+
+	.category-card-count {
+		flex: 0 0 auto;
+		min-width: 1.6rem;
+		padding: 0.05rem 0.4rem;
+		border-radius: var(--r-sm);
+		background: var(--c-soft-strong);
+		color: var(--c-quiet);
+		font-size: var(--t-meta);
+		text-align: center;
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			color var(--dur-fast) var(--ease);
+	}
+
+	.category-card:hover .category-card-count {
+		background: var(--c-accent);
+		color: var(--c-accent-ink);
+	}
+</style>

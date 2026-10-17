@@ -1,0 +1,61 @@
+---
+/*
+ * 单个标签的文章列表。
+ *
+ * 注意：这里给**每一个**标签都生成页面（没有做「文章数 >= 2 才生成」的过滤）。
+ * 方案里原本写了那条过滤，但那样 TagList 就得知道哪些标签有页面，
+ * 漏传一处就会产生 404；而旧博客（reco）也是给所有标签都建页面的。
+ * 个人博客体量下薄页面不是问题，所以这里选简单且不会 404 的做法。
+ */
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import PostCard from '../../components/PostCard.astro';
+import { SITE_TITLE } from '../../consts';
+import { getPosts, groupByTag, type Post } from '../../lib/posts';
+
+export async function getStaticPaths() {
+	const posts = await getPosts();
+	return groupByTag(posts).map(({ name, posts }) => ({
+		params: { tag: name },
+		props: { tag: name, posts },
+	}));
+}
+
+interface Props {
+	tag: string;
+	posts: Post[];
+}
+
+const { tag, posts } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title={`标签：${tag} | ${SITE_TITLE}`}
+			description={`${SITE_TITLE} 中带有「${tag}」标签的全部文章，共 ${posts.length} 篇。`}
+		/>
+	</head>
+	<body>
+		<Header />
+		<main class="wide">
+			<PageHeader
+				title={`# ${tag}`}
+				meta={`共 ${posts.length} 篇`}
+				backHref="/tags"
+				backText="全部标签"
+			/>
+			<ul class="post-grid">
+				{posts.map((post) => (
+					<li>
+						<PostCard post={post} />
+					</li>
+				))}
+			</ul>
+		</main>
+		<Footer />
+	</body>
+</html>

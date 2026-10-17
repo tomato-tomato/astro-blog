@@ -14,11 +14,37 @@ const isActive = href === pathname || href === '/' + (subpath?.[0] || '');
 </a>
 <style>
 	a {
-		display: inline-block;
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 0.65rem;
+		font-size: var(--t-ui);
+		color: var(--c-muted);
 		text-decoration: none;
+		white-space: nowrap;
+		transition: color var(--dur-fast) var(--ease);
 	}
+
+	a:hover {
+		color: var(--c-ink);
+	}
+
+	/* 活动态：居中短下划线（形式取自 newechoes） */
 	a.active {
-		font-weight: bolder;
-		text-decoration: underline;
+		color: var(--c-accent);
+		font-weight: var(--w-medium);
+	}
+
+	a.active::after {
+		content: "";
+		position: absolute;
+		left: 50%;
+		bottom: 0.5rem;
+		width: min(1.85rem, calc(100% - 1.3rem));
+		height: 2px;
+		border-radius: 999px;
+		background: var(--c-accent);
+		transform: translateX(-50%);
 	}
 </style>

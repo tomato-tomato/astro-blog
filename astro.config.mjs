@@ -34,4 +34,14 @@ export default defineConfig({
 	site,
 	integrations: [mdx(), sitemap()],
 	compressHTML: true,
+	markdown: {
+		// 代码高亮走双主题：亮色用 github-light、暗色用 github-dark。
+		// 切换逻辑在 global.css 里按 [data-theme] 读 --shiki-dark-* 变量。
+		shikiConfig: {
+			themes: {
+				light: 'github-light',
+				dark: 'github-dark',
+			},
+		},
+	},
 });

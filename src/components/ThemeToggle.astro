@@ -1,0 +1,203 @@
+---
+/*
+ * 深浅色主题切换按钮。
+ *
+ * 主题的初次判定与写入在 BaseHead.astro 的 is:inline 脚本里完成（防闪烁），
+ * 这里负责「切换」+ 图标显示 + 切换动画。
+ *
+ * 动画形式参考 newechoes：用 View Transitions API，从按钮位置做圆形遮罩。
+ *   亮 → 暗：新快照从按钮处向外**扩散**（动 ::view-transition-new）
+ *   暗 → 亮：旧快照向按钮处**收缩**（动 ::view-transition-old，并把它抬到上层）
+ * 不支持该 API 或用户偏好减少动效时，直接切换。
+ *
+ * 图标语义：显示的是「点击后会变成什么」
+ *   亮色模式 → 显示月亮（点击进入暗色）
+ *   暗色模式 → 显示太阳（点击进入亮色）
+ */
+---
+
+<button
+	id="theme-toggle"
+	class="theme-toggle"
+	type="button"
+	aria-label="切换到深色模式"
+	aria-pressed="false"
+>
+	<svg
+		class="icon icon-moon"
+		xmlns="http://www.w3.org/2000/svg"
+		width="18"
+		height="18"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+		aria-hidden="true"
+	>
+		<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+	</svg>
+	<svg
+		class="icon icon-sun"
+		xmlns="http://www.w3.org/2000/svg"
+		width="18"
+		height="18"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+		aria-hidden="true"
+	>
+		<circle cx="12" cy="12" r="4"></circle>
+		<path d="M12 2v2"></path>
+		<path d="M12 20v2"></path>
+		<path d="m4.93 4.93 1.41 1.41"></path>
+		<path d="m17.66 17.66 1.41 1.41"></path>
+		<path d="M2 12h2"></path>
+		<path d="M20 12h2"></path>
+		<path d="m6.34 17.66-1.41 1.41"></path>
+		<path d="m19.07 4.93-1.41 1.41"></path>
+	</svg>
+</button>
+
+<style>
+	.theme-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 34px;
+		height: 34px;
+		padding: 0;
+		border: 1px solid transparent;
+		border-radius: var(--r-sm);
+		background: transparent;
+		color: var(--c-quiet);
+		cursor: pointer;
+		transition:
+			color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+	}
+
+	.theme-toggle:hover {
+		color: var(--c-ink);
+		background: var(--c-soft-strong);
+		border-color: var(--c-line);
+	}
+
+	.icon {
+		display: none;
+	}
+
+	/* 切换动画进行中时，图标本身也做一点缩放，跟扩散动作呼应 */
+	:global(html.theme-vt) .icon {
+		transition: none;
+	}
+
+	:global(html[data-theme="light"]) .icon-moon,
+	:global(html[data-theme="dark"]) .icon-sun {
+		display: block;
+	}
+</style>
+
+<script>
+	const root = document.documentElement;
+	const button = document.getElementById('theme-toggle');
+	const themeColorMeta = document.getElementById('theme-color');
+	const SWITCH_DURATION = 620;
+
+	function sync(next: string) {
+		const isDark = next === 'dark';
+		button?.setAttribute('aria-pressed', String(isDark));
+		button?.setAttribute('aria-label', isDark ? '切换到浅色模式' : '切换到深色模式');
+		themeColorMeta?.setAttribute('content', isDark ? '#111315' : '#ffffff');
+	}
+
+	/** 真正写入主题：DOM 变更必须同步完成，View Transition 才能正确取快照 */
+	function apply(next: string) {
+		root.dataset.theme = next;
+		try {
+			localStorage.setItem('theme', next);
+		} catch {
+			/* 隐私模式下 localStorage 不可用，忽略即可 */
+		}
+		sync(next);
+	}
+
+	sync(root.dataset.theme ?? 'light');
+
+	button?.addEventListener('click', (event) => {
+		const current = root.dataset.theme === 'dark' ? 'dark' : 'light';
+		const next = current === 'dark' ? 'light' : 'dark';
+
+		const startViewTransition = (
+			document as Document & {
+				startViewTransition?: (cb: () => void) => {
+					ready: Promise<void>;
+					finished: Promise<void>;
+				};
+			}
+		).startViewTransition;
+
+		const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+		if (!startViewTransition || prefersReduced) {
+			apply(next);
+			return;
+		}
+
+		// 键盘触发时 clientX/Y 是 0，退回按钮中心
+		const rect = button.getBoundingClientRect();
+		const isKeyboard = event.detail === 0;
+		const x = isKeyboard ? rect.left + rect.width / 2 : event.clientX;
+		const y = isKeyboard ? rect.top + rect.height / 2 : event.clientY;
+
+		// 扩散半径要够覆盖到视口最远的那个角
+		const radius = Math.hypot(
+			Math.max(x, window.innerWidth - x),
+			Math.max(y, window.innerHeight - y),
+		);
+
+		/* 切到暗色 = 新快照扩散；切回亮色 = 旧快照收缩。
+		   收缩要动 ::view-transition-old，而它默认在新快照**下面**，
+		   所以先给根元素加个类，把它抬到上层（规则在 global.css）。 */
+		const shrink = next === 'light';
+		const circle = (r: number) => `circle(${r}px at ${x}px ${y}px)`;
+
+		// VT 期间关掉自己的颜色过渡，否则两层动画会打架（规则在 global.css）
+		root.classList.add('theme-vt');
+		if (shrink) root.classList.add('theme-vt-shrink');
+
+		const transition = startViewTransition.call(document, () => apply(next));
+
+		transition.ready
+			.then(() => {
+				root.animate(
+					{
+						clipPath: shrink ? [circle(radius), circle(0)] : [circle(0), circle(radius)],
+					},
+					{
+						duration: SWITCH_DURATION,
+						easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+						pseudoElement: shrink
+							? '::view-transition-old(root)'
+							: '::view-transition-new(root)',
+					},
+				);
+			})
+			.catch(() => {
+				/* 过渡被中断，忽略 */
+			});
+
+		transition.finished
+			.catch(() => {
+				/* 同上 */
+			})
+			.finally(() => {
+				root.classList.remove('theme-vt', 'theme-vt-shrink');
+			});
+	});
+</script>

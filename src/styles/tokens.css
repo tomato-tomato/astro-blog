@@ -1,0 +1,106 @@
+/*
+ * 设计令牌
+ * ----------
+ * 中性色阶与字阶取自 newechoes（lsy2246/newechoes），
+ * 强调色取自 react.dev 官方设计令牌（--sp-colors-accent）。
+ *
+ * 约定：
+ *   1. 全站只允许引用这里的变量，不写字面量颜色/字号。
+ *   2. 亮色模式下，强调色浅底（--c-accent-soft）上不要再用强调色文字
+ *      —— 实测对比度最高只有 4.46，达不到 AA 的 4.5。
+ *      徽章走中性底，强调色只在 hover 时出现。
+ */
+
+:root {
+	color-scheme: light;
+
+	/* ---------- 中性色阶 ---------- */
+	--c-bg: #ffffff;
+	--c-ink: #101010; /* 标题、主文字 */
+	--c-body: #1f1f1f; /* 正文 */
+	--c-muted: #3f3f3f; /* 次级文字 */
+	--c-quiet: #626262; /* 元信息：日期、字数 */
+	--c-line: #dedede; /* 分割线、卡片描边 */
+	--c-line-strong: #bdbdbd; /* hover 描边 */
+	--c-soft: #fafafa; /* 弱底：代码块、引用、表头 */
+	--c-soft-strong: #f2f2f2; /* 更强的弱底：行内 code、标签底 */
+
+	/* ---------- 强调色（react.dev） ---------- */
+	--c-accent: #087ea4; /* 白底 4.64:1，AA 正文 */
+	--c-accent-hover: #066a8b;
+	--c-accent-ink: #ffffff; /* 强调色实底上的文字 */
+	--c-accent-soft: #f5fafb; /* 只做背景，其上文字用 --c-ink */
+	--c-accent-line: #badbe6;
+
+	/* ---------- 字阶 ---------- */
+	--t-meta: 0.75rem;
+	--t-small: 0.8125rem;
+	--t-ui: 0.875rem;
+	--t-body: 1rem;
+	--t-lead: 1.0625rem;
+	--t-card-title: 1.0625rem;
+	--t-h3: 1.25rem;
+	--t-h2: 1.5rem;
+	--t-h1: 1.875rem;
+	--t-title: 2.5rem;
+
+	/* ---------- 行高 ---------- */
+	--lh-tight: 1.15;
+	--lh-head: 1.3;
+	--lh-copy: 1.75;
+	--lh-dense: 1.4;
+
+	/* ---------- 字重 ---------- */
+	--w-normal: 400;
+	--w-medium: 500;
+	--w-bold: 700;
+
+	/* ---------- 尺度 ---------- */
+	--header-h: 56px; /* 页头高度：首页 hero 的满屏高度要减掉它 */
+	--w-page: 1080px;
+	--w-list: 960px; /* 列表类页面：文章列表 / 分类 / 标签 */
+	--w-article: 720px; /* 正文单栏 */
+	--r-sm: 6px;
+	--r-md: 10px;
+	--r-lg: 14px;
+
+	/* ---------- 阴影（克制使用，主要用于图片 hover） ---------- */
+	--shadow-soft:
+		0 1px 2px rgba(16, 16, 16, 0.04), 0 8px 24px rgba(16, 16, 16, 0.06);
+
+	/* ---------- 动效 ---------- */
+	--ease: cubic-bezier(0.4, 0, 0.2, 1);
+	--dur-fast: 0.18s;
+	--dur: 0.28s;
+
+	/* ---------- 字体 ---------- */
+	--font-ui:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+		"Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+	--font-mono:
+		ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+		monospace;
+}
+
+[data-theme="dark"] {
+	color-scheme: dark;
+
+	--c-bg: #111315;
+	--c-ink: #f5f7fa;
+	--c-body: #d9dee5;
+	--c-muted: #bdc5cf;
+	--c-quiet: #8f9aa7;
+	--c-line: #30363d;
+	--c-line-strong: #424a54;
+	--c-soft: #15181c;
+	--c-soft-strong: #1a1e23;
+
+	--c-accent: #58c4dc; /* 深底 9.17:1，AAA 正文 */
+	--c-accent-hover: #7ad2e6;
+	--c-accent-ink: #101010; /* 强调色实底上用深字，9.37:1 */
+	--c-accent-soft: #1b2c31;
+	--c-accent-line: #294f59;
+
+	--shadow-soft:
+		0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+}

@@ -1,54 +1,57 @@
 /*
-  The CSS in this style tag is based off of Bear Blog's default CSS.
-  https://github.com/HermanMartinus/bearblog/blob/297026a877bc2ab2b3bdfbd6b9f7961c350917dd/templates/styles/blog/default.css
-  License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
+ * 基础样式
+ * ----------
+ * 令牌定义见 ./tokens.css。本文件只做「元素级」默认样式，
+ * 组件自己的样式留在各自 .astro 的 <style> 里。
+ *
+ * 原文件基于 Bear Blog 默认 CSS（MIT），已按新令牌重写。
  */
 
-:root {
-	--accent: #2337ff;
-	--accent-dark: #000d8a;
-	--black: 15, 18, 25;
-	--gray: 96, 115, 159;
-	--gray-light: 229, 233, 240;
-	--gray-dark: 34, 41, 57;
-	--gray-gradient: rgba(var(--gray-light), 50%), #fff;
-	--box-shadow:
-		0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
-		0 16px 32px rgba(var(--gray), 33%);
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
 }
-@font-face {
-	font-family: 'Atkinson';
-	src: url('/fonts/atkinson-regular.woff') format('woff');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
+
+html {
+	/* 中文与西文之间自动留白 */
+	text-autospace: normal;
+	/* 预留滚动条空间，避免页面加载后左右抖动 */
+	scrollbar-gutter: stable;
+	-webkit-text-size-adjust: 100%;
 }
-@font-face {
-	font-family: 'Atkinson';
-	src: url('/fonts/atkinson-bold.woff') format('woff');
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
+
 body {
-	font-family: 'Atkinson', sans-serif;
+	/* 纵向 flex：让页脚在内容不足时也贴在视口底部 */
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	min-height: 100dvh;
 	margin: 0;
 	padding: 0;
+	background: var(--c-bg);
+	color: var(--c-body);
+	font-family: var(--font-ui);
+	font-size: var(--t-body);
+	line-height: var(--lh-copy);
 	text-align: left;
-	background: linear-gradient(var(--gray-gradient)) no-repeat;
-	background-size: 100% 600px;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
-	color: rgb(var(--gray-dark));
-	font-size: 20px;
-	line-height: 1.7;
 }
+
 main {
-	width: 720px;
+	flex: 1 0 auto;
+	width: var(--w-article);
 	max-width: calc(100% - 2em);
-	margin: auto;
+	margin-inline: auto;
 	padding: 3em 1em;
 }
+
 h1,
 h2,
 h3,
@@ -56,83 +59,225 @@ h4,
 h5,
 h6 {
 	margin: 0 0 0.5rem 0;
-	color: rgb(var(--black));
-	line-height: 1.2;
+	color: var(--c-ink);
+	line-height: var(--lh-head);
+	font-weight: var(--w-bold);
 }
+
 h1 {
-	font-size: 3.052em;
+	font-size: var(--t-h1);
 }
 h2 {
-	font-size: 2.441em;
+	font-size: var(--t-h2);
 }
 h3 {
-	font-size: 1.953em;
+	font-size: var(--t-h3);
 }
 h4 {
-	font-size: 1.563em;
+	font-size: var(--t-lead);
 }
 h5 {
-	font-size: 1.25em;
+	font-size: var(--t-body);
 }
+
 strong,
 b {
-	font-weight: 700;
+	font-weight: var(--w-bold);
 }
+
 a {
-	color: var(--accent);
+	color: var(--c-accent);
+	text-decoration-color: color-mix(in oklab, var(--c-accent) 40%, transparent);
+	text-underline-offset: 0.2em;
+	transition:
+		color var(--dur-fast) var(--ease),
+		text-decoration-color var(--dur-fast) var(--ease);
 }
+
 a:hover {
-	color: var(--accent);
+	color: var(--c-accent-hover);
+	text-decoration-color: currentColor;
 }
+
+:focus-visible {
+	outline: 2px solid var(--c-accent);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
 p {
 	margin-bottom: 1em;
 }
+
 .prose p {
-	margin-bottom: 2em;
+	margin-bottom: 1.6em;
 }
+
 textarea {
 	width: 100%;
 	font-size: 16px;
 }
+
 input {
 	font-size: 16px;
 }
+
 table {
 	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--t-small);
 }
+
+th,
+td {
+	border: 1px solid var(--c-line);
+	padding: 0.5em 0.75em;
+	text-align: left;
+}
+
+th {
+	background: var(--c-soft);
+	color: var(--c-ink);
+	font-weight: var(--w-medium);
+}
+
 img {
 	max-width: 100%;
 	height: auto;
-	border-radius: 8px;
+	border-radius: var(--r-md);
 }
+
 code {
 	padding: 2px 5px;
-	background-color: rgb(var(--gray-light));
-	border-radius: 2px;
+	background-color: var(--c-soft-strong);
+	border-radius: var(--r-sm);
+	font-family: var(--font-mono);
+	font-size: 0.9em;
 }
+
 pre {
-	padding: 1.5em;
-	border-radius: 8px;
+	padding: 1.25em;
+	border: 1px solid var(--c-line);
+	border-radius: var(--r-md);
+	background-color: var(--c-soft);
+	overflow-x: auto;
 }
+
 pre > code {
 	all: unset;
+	font-family: var(--font-mono);
+	font-size: var(--t-small);
+	line-height: var(--lh-dense);
 }
+
+/* ---------- 代码高亮双主题 ----------
+ * Shiki 会同时输出 --shiki-light-* 与 --shiki-dark-* 两组变量，
+ * 这里按 data-theme 决定用哪一组。背景统一走 --c-soft，避免
+ * 主题自带的底色（#fff / #24292e）和站点的中性色阶打架。
+ */
+pre.astro-code {
+	background-color: var(--c-soft) !important;
+}
+
+[data-theme="dark"] .astro-code,
+[data-theme="dark"] .astro-code span {
+	color: var(--shiki-dark) !important;
+	font-style: var(--shiki-dark-font-style) !important;
+	font-weight: var(--shiki-dark-font-weight) !important;
+	text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
 blockquote {
-	border-left: 4px solid var(--accent);
-	padding: 0 0 0 20px;
-	margin: 0px;
-	font-size: 1.333em;
+	margin: 0;
+	padding: 0.25em 0 0.25em 1.25em;
+	border-left: 3px solid var(--c-accent);
+	color: var(--c-ink);
 }
+
 hr {
 	border: none;
-	border-top: 1px solid rgb(var(--gray-light));
+	border-top: 1px solid var(--c-line);
 }
+
 @media (max-width: 720px) {
-	body {
-		font-size: 18px;
-	}
 	main {
-		padding: 1em;
+		padding: 1.5em 1em;
+	}
+}
+
+/* ---------- 主题切换动效 ----------
+ * theme-ready 由 BaseHead 的内联脚本在页面 load 之后加上，
+ * 这样首屏渲染不会带着 transition 闪一下。
+ */
+@media (prefers-reduced-motion: no-preference) {
+	html.theme-ready body,
+	html.theme-ready header,
+	html.theme-ready footer,
+	html.theme-ready article,
+	html.theme-ready .prose {
+		transition:
+			background-color var(--dur) var(--ease),
+			border-color var(--dur) var(--ease),
+			color var(--dur) var(--ease);
+	}
+}
+
+/* ---------- 主题切换：圆形遮罩（View Transitions API） ----------
+ * 这两条必须放在全局样式里 —— 放进组件会被 Astro 加上 scope 属性而失效。
+ * 关闭 VT 自带的淡入淡出，改由 JS 用 clip-path 做圆形遮罩：
+ *   亮 → 暗 动 new（扩散），暗 → 亮 动 old（收缩）。
+ * theme-vt 期间关掉自身的颜色过渡，避免两层动画打架。
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+/* 暗 → 亮 是「旧快照收缩」，必须把旧快照抬到新快照上层，
+   否则收缩过程中露出来的还是它自己，看不到切换效果。
+   这个类由 ThemeToggle 在 startViewTransition 之前加上。 */
+html.theme-vt-shrink::view-transition-old(root) {
+	z-index: 1;
+}
+
+html.theme-vt body,
+html.theme-vt header,
+html.theme-vt footer,
+html.theme-vt article,
+html.theme-vt .prose {
+	transition: none !important;
+}
+
+/* ---------- 插图的暗色适配 ----------
+ * 首页那两张 undraw 插图是「白底不透明」PNG，暗色模式下直接显示会变成
+ * 刺眼的白块。invert 把白底压成深色、深色线条提成浅色，hue-rotate(180deg)
+ * 再把色相转回来，整体接近原图的观感。
+ */
+[data-theme="dark"] .illustration-img {
+	filter: invert(1) hue-rotate(180deg);
+}
+
+/* ---------- 列表类页面的容器与卡片网格 ----------
+ * 文章列表 / 分类页 / 标签页 / 首页共用，避免在每个页面里重复写一遍。
+ */
+main.wide {
+	width: var(--w-list);
+}
+
+.post-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1.5rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+@media (max-width: 720px) {
+	.post-grid {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.25rem;
 	}
 }
 

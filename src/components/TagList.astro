@@ -1,0 +1,71 @@
+---
+/*
+ * 标签徽章组。
+ *
+ * 默认中性底 + 次级文字，hover 时才切到强调色文字 + 强调色描边 ——
+ * 这是亮色模式下唯一安全的强调色用法（浅底 + 强调色文字对比度不达标）。
+ */
+interface Props {
+	tags: string[];
+	/** 最多显示几个，超出部分丢弃 */
+	max?: number;
+	/** 是否可点击跳转到标签页，默认 true */
+	linkable?: boolean;
+	class?: string;
+}
+
+const { tags, max, linkable = true, class: className } = Astro.props;
+const list = typeof max === 'number' ? tags.slice(0, max) : tags;
+---
+
+{
+	list.length > 0 && (
+		<ul class:list={['tag-list', className]}>
+			{list.map((tag) =>
+				linkable ? (
+					<li>
+						<a class="tag" href={`/tags/${tag}`}>
+							{tag}
+						</a>
+					</li>
+				) : (
+					<li>
+						<span class="tag">{tag}</span>
+					</li>
+				),
+			)}
+		</ul>
+	)
+}
+
+<style>
+	.tag-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.tag {
+		display: inline-block;
+		padding: 0.1rem 0.45rem;
+		border: 1px solid transparent;
+		border-radius: var(--r-sm);
+		background: var(--c-soft-strong);
+		color: var(--c-muted);
+		font-size: var(--t-meta);
+		line-height: 1.7;
+		white-space: nowrap;
+		text-decoration: none;
+		transition:
+			color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+	}
+
+	a.tag:hover {
+		color: var(--c-accent);
+		border-color: var(--c-accent-line);
+	}
+</style>

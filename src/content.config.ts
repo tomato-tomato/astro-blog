@@ -3,9 +3,9 @@ import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
 
 const blog = defineCollection({
-	// Load Markdown and MDX files in the `src/content/blog/` directory.
+	// 分类 = 目录：src/content/blog/<分类>/<文章>.md
+	// 文章的分类由 src/lib/posts.ts 的 getCategory() 从 id 的首段推导。
 	loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
-	// Type-check frontmatter using a schema
 	schema: ({ image }) =>
 		z.object({
 			title: z.string(),
@@ -14,6 +14,10 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: image().optional(),
+			// 标签：一篇可挂多个，页面上按出现次数倒序
+			tags: z.array(z.string()).default([]),
+			// 草稿：true 的文章不进列表、不进 RSS、不生成页面
+			draft: z.boolean().default(false),
 		}),
 });
 

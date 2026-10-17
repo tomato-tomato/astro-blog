@@ -1,0 +1,48 @@
+---
+/*
+ * 分类徽章。
+ *
+ * 视觉层级：分类用「强调色实底」，标签用「中性底」——两者一眼可分。
+ * 之所以不用「强调色浅底 + 强调色文字」：亮色模式下那样对比度只有 4.4，
+ * 达不到 AA 的 4.5（见方案 §1.3 实测）。
+ */
+interface Props {
+	/** 分类名 */
+	name: string;
+	/** 链接地址；传 false 渲染成不可点的纯标签 */
+	href?: string | false;
+	class?: string;
+}
+
+const { name, href = `/categories/${name}`, class: className } = Astro.props;
+---
+
+{
+	href ? (
+		<a class:list={['category-badge', className]} href={href}>
+			{name}
+		</a>
+	) : (
+		<span class:list={['category-badge', className]}>{name}</span>
+	)
+}
+
+<style>
+	.category-badge {
+		display: inline-block;
+		padding: 0.1rem 0.45rem;
+		border-radius: var(--r-sm);
+		background: var(--c-accent);
+		color: var(--c-accent-ink);
+		font-size: var(--t-meta);
+		line-height: 1.7;
+		white-space: nowrap;
+		text-decoration: none;
+		transition: background-color var(--dur-fast) var(--ease);
+	}
+
+	a.category-badge:hover {
+		background: var(--c-accent-hover);
+		color: var(--c-accent-ink);
+	}
+</style>

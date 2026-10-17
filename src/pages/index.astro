@@ -1,8 +1,73 @@
 ---
+/*
+ * 首页。
+ *
+ * 结构：hero（满屏：站名 + 一句话 + 大插图 + 粒子背景）+ 最新 3 篇文章。
+ * 站名左侧的头像在页头（见 Header.astro）。
+ *
+ * 素材：
+ *   hero.svg / avatar.svg 都是 undraw 的透明底 SVG（线条是深色），
+ *   暗色模式靠 global.css 里的 .illustration-img 滤镜反转适配。
+ *
+ * 背景粒子：tsParticles（@tsparticles/engine + @tsparticles/slim）。
+ *   没有用官方封装 <Particles>（@tsparticles/astro）：它在 dev 下会把
+ *   initParticlesEngine 和组件脚本拆成两个模块实例，状态不共享，粒子永远不加载
+ *   （生产构建里被打进同一个 chunk 才碰巧能跑）。而且它把 id 写在 data-id 上、
+ *   tsParticles 却按 getElementById 找容器，会另建一个 canvas 挂到 body。
+ *   直接用引擎：tsParticles.load({ element }) —— 路径唯一，dev/prod 行为一致。
+ */
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import PostCard from '../components/PostCard.astro';
+import type { ISourceOptions } from '@tsparticles/engine';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getPosts } from '../lib/posts';
+import HeroImage from '../assets/hero.svg';
+
+const posts = await getPosts();
+const latest = posts.slice(0, 3);
+
+/* 粒子配色与站点强调色同源（react.dev）。
+   这里写的是亮色值，客户端脚本会在挂载后按当前主题覆盖。 */
+const particleOptions: ISourceOptions = {
+	fullScreen: { enable: false },
+	detectRetina: true,
+	fpsLimit: 60,
+	background: { color: { value: 'transparent' } },
+	particles: {
+		number: { value: 58, density: { enable: true, width: 1200, height: 800 } },
+		color: { value: '#087ea4' },
+		shape: { type: 'circle' },
+		/* 之前的 0.12–0.42 在亮色底上几乎看不见，提到 0.32–0.72 */
+		opacity: { value: { min: 0.32, max: 0.72 } },
+		size: { value: { min: 1.3, max: 2.8 } },
+		links: {
+			enable: true,
+			distance: 160,
+			color: '#087ea4',
+			opacity: 0.3,
+			width: 1,
+		},
+		move: {
+			enable: true,
+			speed: 0.45,
+			direction: 'none',
+			random: true,
+			straight: false,
+			outModes: { default: 'out' },
+		},
+	},
+	interactivity: {
+		events: {
+			onHover: { enable: true, mode: 'grab' },
+			resize: { enable: true },
+		},
+		modes: {
+			grab: { distance: 180, links: { opacity: 0.55 } },
+		},
+	},
+};
 ---
 
 <!doctype html>
@@ -12,38 +77,288 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+		<main class="home-main">
+			<section class="home-hero">
+				<!-- 粒子画布挂在这里；选项以 JSON 交给客户端脚本，
+				     由它按当前主题着色后再调 tsParticles.load。 -->
+				<div
+					class="hero-particles"
+					id="hero-particles"
+					aria-hidden="true"
+					data-particles-options={JSON.stringify(particleOptions)}
+				>
+				</div>
+
+				<div class="home-hero-inner">
+					<h1 class="home-title">{SITE_TITLE}</h1>
+					<p class="home-tagline">{SITE_DESCRIPTION}</p>
+					<div class="home-illustration">
+						<img
+							class="illustration-img"
+							src={HeroImage.src}
+							alt=""
+							width={HeroImage.width}
+							height={HeroImage.height}
+							loading="eager"
+						/>
+					</div>
+				</div>
+
+				<a class="hero-scroll" href="#latest" aria-label="向下浏览">
+					<svg
+						viewBox="0 0 24 24"
+						width="20"
+						height="20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.6"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M6 9l6 6 6-6"></path>
+					</svg>
+				</a>
+			</section>
+
+			{
+				latest.length > 0 && (
+					<section id="latest" class="home-latest" aria-label="最新文章">
+						<div class="home-latest-head">
+							<h2>最新文章</h2>
+							<a href="/blog">全部文章 →</a>
+						</div>
+						<ul class="post-grid">
+							{latest.map((post) => (
+								<li>
+									<PostCard post={post} />
+								</li>
+							))}
+						</ul>
+					</section>
+				)
+			}
 		</main>
 		<Footer />
 	</body>
 </html>
+
+<script>
+	import { tsParticles } from '@tsparticles/engine';
+	import { loadSlim } from '@tsparticles/slim';
+
+	/* 亮/暗两套粒子色，与 tokens.css 的 --c-accent 保持一致 */
+	const COLORS = { light: '#087ea4', dark: '#58c4dc' };
+
+	const el = document.getElementById('hero-particles');
+	const baked = el?.dataset.particlesOptions;
+
+	if (el && baked) {
+		const currentTheme = () =>
+			document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+
+		const buildOptions = (theme: string) => {
+			const options = JSON.parse(baked);
+			const color = COLORS[theme as 'light' | 'dark'] ?? COLORS.light;
+			if (options?.particles?.color) options.particles.color.value = color;
+			if (options?.particles?.links?.color) options.particles.links.color = color;
+			return options;
+		};
+
+		let container: Awaited<ReturnType<typeof tsParticles.load>> = undefined;
+
+		const render = async (theme: string) => {
+			container?.destroy();
+			container = await tsParticles.load({
+				id: 'hero-particles',
+				element: el,
+				options: buildOptions(theme),
+			});
+		};
+
+		// 插件注册完成后才能 load；注册和 load 用的是同一个引擎实例
+		loadSlim(tsParticles)
+			.then(() => render(currentTheme()))
+			.then(() => {
+				// 跟随页头的主题切换：销毁旧容器，按新配色重建
+				new MutationObserver(() => void render(currentTheme())).observe(
+					document.documentElement,
+					{ attributes: true, attributeFilter: ['data-theme'] },
+				);
+			})
+			.catch((error) => {
+				console.error('[particles] 初始化失败', error);
+			});
+	}
+</script>
+
+<style>
+	/* 首页要满屏，所以取消 main 的窄栏与上下内边距，由各区块自己控制 */
+	main.home-main {
+		width: 100%;
+		max-width: none;
+		padding: 0;
+	}
+
+	/* ---------- hero：正好一屏（减掉吸顶页头） ---------- */
+	.home-hero {
+		position: relative;
+		display: grid;
+		place-items: center;
+		min-height: calc(100vh - var(--header-h));
+		min-height: calc(100svh - var(--header-h));
+		padding: 2rem 1rem 3.5rem;
+		overflow: hidden;
+		text-align: center;
+	}
+
+	.hero-particles {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		/* 不设 pointer-events: none —— 否则 hover 的 grab 连线效果就没了。
+		   内容层（.home-hero-inner）在它上面，点击与选中文字都不受影响。 */
+	}
+
+	.hero-particles :global(canvas) {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.home-hero-inner {
+		position: relative;
+		z-index: 1;
+		width: min(100%, 58rem);
+	}
+
+	.home-title {
+		margin: 0;
+		font-size: var(--t-title);
+		line-height: var(--lh-tight);
+		letter-spacing: -0.02em;
+		color: var(--c-ink);
+	}
+
+	.home-tagline {
+		margin: 0.75rem 0 0;
+		font-size: var(--t-lead);
+		color: var(--c-muted);
+	}
+
+	.home-illustration {
+		width: min(100%, 40rem);
+		margin: 2.5rem auto 0;
+	}
+
+	.home-illustration :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	/* 下滑提示：告诉读者下面还有内容（满屏 hero 的必备物） */
+	.hero-scroll {
+		position: absolute;
+		bottom: 1.5rem;
+		left: 50%;
+		z-index: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		color: var(--c-quiet);
+		transform: translateX(-50%);
+		transition:
+			color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease);
+	}
+
+	.hero-scroll:hover {
+		color: var(--c-accent);
+		background: var(--c-soft-strong);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.hero-scroll svg {
+			animation: scroll-hint 2.4s ease-in-out infinite;
+		}
+	}
+
+	@keyframes scroll-hint {
+		0%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.65;
+		}
+		50% {
+			transform: translateY(4px);
+			opacity: 1;
+		}
+	}
+
+	/* ---------- 最新文章 ---------- */
+	.home-latest {
+		width: min(100% - 2rem, var(--w-list));
+		margin-inline: auto;
+		padding: 3.5rem 0 4.5rem;
+	}
+
+	.home-latest-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.5rem 1rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.home-latest-head h2 {
+		margin: 0;
+		font-size: var(--t-h2);
+		color: var(--c-ink);
+	}
+
+	.home-latest-head a {
+		font-size: var(--t-small);
+		color: var(--c-quiet);
+		text-decoration: none;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.home-latest-head a:hover {
+		color: var(--c-accent);
+	}
+
+	@media (max-width: 720px) {
+		.home-hero {
+			padding: 1.5rem 1rem 3rem;
+		}
+
+		.home-illustration {
+			margin-top: 1.75rem;
+		}
+
+		.home-latest {
+			padding: 2.5rem 0 3.5rem;
+		}
+	}
+
+	/* 矮屏（横放的笔记本、手机横屏）：别让插图把 hero 撑破 */
+	@media (max-height: 640px) {
+		.home-illustration {
+			width: min(100%, 26rem);
+			margin-top: 1.25rem;
+		}
+
+		.home-hero {
+			padding-bottom: 1.5rem;
+		}
+
+		.hero-scroll {
+			display: none;
+		}
+	}
+</style>

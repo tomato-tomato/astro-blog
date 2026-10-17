@@ -1,0 +1,57 @@
+---
+/*
+ * 单个分类的文章列表。
+ * 分类由目录推导，见 src/lib/posts.ts 的 getCategory()。
+ */
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import PostCard from '../../components/PostCard.astro';
+import { SITE_TITLE } from '../../consts';
+import { getPosts, groupByCategory, type Post } from '../../lib/posts';
+
+export async function getStaticPaths() {
+	const posts = await getPosts();
+	return groupByCategory(posts).map(({ name, posts }) => ({
+		params: { category: name },
+		props: { category: name, posts },
+	}));
+}
+
+interface Props {
+	category: string;
+	posts: Post[];
+}
+
+const { category, posts } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title={`分类：${category} | ${SITE_TITLE}`}
+			description={`${SITE_TITLE} 中「${category}」分类下的全部文章，共 ${posts.length} 篇。`}
+		/>
+	</head>
+	<body>
+		<Header />
+		<main class="wide">
+			<PageHeader
+				title={category}
+				meta={`共 ${posts.length} 篇`}
+				backHref="/categories"
+				backText="全部分类"
+			/>
+			<ul class="post-grid">
+				{posts.map((post) => (
+					<li>
+						<PostCard post={post} />
+					</li>
+				))}
+			</ul>
+		</main>
+		<Footer />
+	</body>
+</html>
