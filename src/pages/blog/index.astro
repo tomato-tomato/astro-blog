@@ -17,7 +17,7 @@ const posts = await getPosts();
 	</head>
 	<body>
 		<Header />
-		<main class="wide">
+		<main>
 			<PageHeader title="全部文章" meta={`共 ${posts.length} 篇`} />
 			{
 				posts.length > 0 ? (

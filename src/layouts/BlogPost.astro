@@ -1,12 +1,12 @@
 ---
 /*
- * 文章详情页布局。
+ * 文章详情页布局。两种版式，由 frontmatter 的 `layout` 决定：
  *
- * 与首页 / 列表页的区别：
- *   - 标题左对齐（中文长标题居中很难看）
- *   - 日期移到标题下方
- *   - hero 图限宽到正文宽度、用 --r-lg 圆角、去掉重阴影
- * 正文宽度由 global.css 的 main 统一给（--w-article）。
+ *   post（默认）  正文 + 右侧大纲（吸顶，不随页面滚走）
+ *   doc          左侧可折叠目录 + 正文 + 右侧大纲
+ *
+ * 宽度与页头对齐：main 由 global.css 统一给 max-width: --w-page + padding 1rem，
+ * 这里只负责在内部切列。
  */
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
@@ -15,15 +15,31 @@ import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import CategoryBadge from '../components/CategoryBadge.astro';
 import TagList from '../components/TagList.astro';
+import ArticleOutline from '../components/ArticleOutline.astro';
+import { buildToc, type Heading } from '../lib/toc';
 import { Image } from 'astro:assets';
 
 // category 由 blog/[...slug].astro 传入（分类从目录推导）；
 // about.astro 复用本布局时不传，所以是可选的。
 type Props = CollectionEntry<'blog'>['data'] & {
 	category?: string;
+	headings?: Heading[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, category, tags = [] } = Astro.props;
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	heroImage,
+	category,
+	tags = [],
+	layout = 'post',
+	headings = [],
+} = Astro.props;
+
+const toc = buildToc(headings);
+const hasToc = toc.length > 0;
 ---
 
 <html lang="en">
@@ -33,8 +49,10 @@ const { title, description, pubDate, updatedDate, heroImage, category, tags = []
 
 	<body>
 		<Header />
-		<main>
-			<article>
+		<main class="article-shell" data-layout={layout} data-has-toc={hasToc}>
+			{layout === 'doc' && hasToc && <ArticleOutline nodes={toc} variant="doc" />}
+
+			<article class="article-main">
 				{
 					heroImage && (
 						<div class="hero-image">
@@ -63,12 +81,125 @@ const { title, description, pubDate, updatedDate, heroImage, category, tags = []
 					<slot />
 				</div>
 			</article>
+
+			{hasToc && <ArticleOutline nodes={toc} variant="side" />}
 		</main>
 		<Footer />
 	</body>
 </html>
 
+<script>
+	/* 大纲高亮：找出「已经滚过视口上沿」的最后一个标题，标给对应链接。
+	   左右两份大纲共用同一套 data 属性，一次处理两边。 */
+	const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-outline] a[href^="#"]'));
+
+	if (links.length > 0) {
+		const byId = new Map<string, HTMLAnchorElement[]>();
+		for (const a of links) {
+			const id = decodeURIComponent(a.hash.slice(1));
+			const list = byId.get(id);
+			if (list) list.push(a);
+			else byId.set(id, [a]);
+		}
+
+		const targets = Array.from(byId.keys())
+			.map((id) => document.getElementById(id))
+			.filter((el): el is HTMLElement => Boolean(el));
+
+		let active = '';
+
+		const setActive = (id: string) => {
+			if (id === active) return;
+			active = id;
+			for (const a of links) a.removeAttribute('data-active');
+			for (const a of byId.get(id) ?? []) a.setAttribute('data-active', '');
+		};
+
+		const update = () => {
+			if (targets.length === 0) return;
+			const line = window.scrollY + 96; // 页头高度 + 一点余量
+			let current = targets[0].id;
+			for (const el of targets) {
+				if (el.getBoundingClientRect().top + window.scrollY <= line) current = el.id;
+				else break;
+			}
+			setActive(current);
+		};
+
+		let ticking = false;
+		const onScroll = () => {
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(() => {
+				ticking = false;
+				update();
+			});
+		};
+
+		window.addEventListener('scroll', onScroll, { passive: true });
+		window.addEventListener('resize', onScroll, { passive: true });
+		update();
+
+		/* 窄屏下大纲会变成文首的折叠块，默认收起，别把正文顶下去 */
+		const collapseOnNarrow = () => {
+			const narrow = window.matchMedia('(max-width: 900px)').matches;
+			for (const el of document.querySelectorAll<HTMLDetailsElement>('details.outline')) {
+				el.open = !narrow;
+			}
+		};
+		collapseOnNarrow();
+		window.matchMedia('(max-width: 900px)').addEventListener('change', collapseOnNarrow);
+	}
+</script>
+
 <style>
+	/* ---------- 版式网格 ---------- */
+	main.article-shell {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 15rem;
+		gap: 3rem;
+		align-items: start;
+	}
+
+	main.article-shell[data-has-toc='false'] {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	main.article-shell[data-layout='doc'] {
+		grid-template-columns: 12rem minmax(0, 1fr) 13rem;
+		gap: 2.5rem;
+	}
+
+	main.article-shell[data-layout='doc'][data-has-toc='false'] {
+		grid-template-columns: 12rem minmax(0, 1fr);
+	}
+
+	/* 文档版式下右侧大纲先让位，正文别被挤成窄条 */
+	@media (max-width: 1180px) {
+		main.article-shell[data-layout='doc'] {
+			grid-template-columns: 12rem minmax(0, 1fr);
+		}
+
+		main.article-shell[data-layout='doc'] :global(.outline--side) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 900px) {
+		main.article-shell,
+		main.article-shell[data-layout='doc'],
+		main.article-shell[data-layout='doc'][data-has-toc='false'] {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 1.5rem;
+		}
+
+		/* 大纲折叠块排到正文前面 */
+		main.article-shell :global(.outline) {
+			order: -1;
+		}
+	}
+
+	/* ---------- 正文 ---------- */
 	.hero-image {
 		margin-bottom: 2.25rem;
 	}
@@ -115,6 +246,11 @@ const { title, description, pubDate, updatedDate, heroImage, category, tags = []
 		font-size: var(--t-lead);
 		line-height: var(--lh-copy);
 		color: var(--c-body);
+	}
+
+	/* 正文单行长度控制在约 40 个汉字，列再宽也不铺满 */
+	.prose > :global(*) {
+		max-width: 44rem;
 	}
 
 	@media (max-width: 720px) {

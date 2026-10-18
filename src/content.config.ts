@@ -18,6 +18,10 @@ const blog = defineCollection({
 			tags: z.array(z.string()).default([]),
 			// 草稿：true 的文章不进列表、不进 RSS、不生成页面
 			draft: z.boolean().default(false),
+			// 文章版式：
+			//   post（默认）正文 + 右侧大纲
+			//   doc        左侧可展开目录 + 正文 + 右侧大纲
+			layout: z.enum(['post', 'doc']).default('post'),
 		}),
 });
 

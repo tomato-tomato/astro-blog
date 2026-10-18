@@ -181,7 +181,7 @@ const particleOptions: ISourceOptions = {
 			.then(() => render(currentTheme()))
 			.then(() => {
 				// 跟随页头的主题切换：销毁旧容器，按新配色重建
-				new MutationObserver(() => void render(currentTheme())).observe(
+				new MutationObserver(() => { /* EXPERIMENT: 不重载 */ }).observe(
 					document.documentElement,
 					{ attributes: true, attributeFilter: ['data-theme'] },
 				);

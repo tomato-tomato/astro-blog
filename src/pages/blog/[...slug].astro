@@ -16,9 +16,10 @@ interface Props {
 }
 
 const { post } = Astro.props;
-const { Content } = await render(post);
+// headings 是 render() 顺带给出的标题树，交给布局生成大纲
+const { Content, headings } = await render(post);
 ---
 
-<BlogPost {...post.data} category={getCategory(post)}>
+<BlogPost {...post.data} category={getCategory(post)} headings={headings}>
 	<Content />
 </BlogPost>

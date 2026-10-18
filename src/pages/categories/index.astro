@@ -1,17 +1,25 @@
 ---
 /*
- * 分类总览。卡片形态取自旧博客（vuepress-theme-reco）首页右侧的分类列表：
- * 左侧分类名，右侧文章数徽章。
+ * 分类页。
+ *
+ * 上下两段：
+ *   上  可点击的分类标签（含「全部」），点击即筛选
+ *   下  文章列表（一次性全渲染，前端按 data-category 显隐）
+ *
+ * 文章里的分类徽章仍然链到 /categories/<分类>，那条路径不变。
+ * 这里选中某个分类时不跳转，只改 ?c=，方便分享与刷新后保持选中。
  */
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PageHeader from '../../components/PageHeader.astro';
+import PostCard from '../../components/PostCard.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getPosts, groupByCategory } from '../../lib/posts';
+import { getCategory, getPosts, groupByCategory } from '../../lib/posts';
 
 const posts = await getPosts();
 const categories = groupByCategory(posts);
+const total = posts.length;
 ---
 
 <!doctype html>
@@ -21,20 +29,37 @@ const categories = groupByCategory(posts);
 	</head>
 	<body>
 		<Header />
-		<main class="wide">
-			<PageHeader title="分类" meta={`共 ${categories.length} 个`} />
+		<main>
+			<PageHeader title="分类" meta={`共 ${categories.length} 个分类 · ${total} 篇文章`} />
+
 			{
 				categories.length > 0 ? (
-					<ul class="category-grid">
-						{categories.map((c) => (
-							<li>
-								<a class="category-card" href={`/categories/${c.name}`}>
-									<span class="category-card-name">{c.name}</span>
-									<span class="category-card-count">{c.count}</span>
-								</a>
-							</li>
-						))}
-					</ul>
+					<>
+						<div class="filter" role="group" aria-label="按分类筛选" data-filter>
+							<button class="chip" type="button" data-category="" aria-pressed="true">
+								全部
+								<span class="chip-count">{total}</span>
+							</button>
+							{categories.map((c) => (
+								<button class="chip" type="button" data-category={c.name} aria-pressed="false">
+									{c.name}
+									<span class="chip-count">{c.count}</span>
+								</button>
+							))}
+						</div>
+
+						<ul class="post-grid" data-post-list>
+							{posts.map((post) => (
+								<li data-category={getCategory(post)}>
+									<PostCard post={post} />
+								</li>
+							))}
+						</ul>
+
+						<p class="filter-empty" data-filter-empty hidden>
+							这个分类下还没有文章。
+						</p>
+					</>
 				) : (
 					<p>还没有分类。</p>
 				)
@@ -44,57 +69,98 @@ const categories = groupByCategory(posts);
 	</body>
 </html>
 
+<script>
+	const root = document.querySelector<HTMLElement>('[data-filter]');
+
+	if (root) {
+		const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('.chip'));
+		const items = Array.from(document.querySelectorAll<HTMLLIElement>('[data-post-list] > li'));
+		const empty = document.querySelector<HTMLElement>('[data-filter-empty]');
+
+		const apply = (category: string) => {
+			let shown = 0;
+
+			for (const chip of chips) {
+				chip.setAttribute('aria-pressed', String(chip.dataset.category === category));
+			}
+
+			for (const li of items) {
+				const match = !category || li.dataset.category === category;
+				li.hidden = !match;
+				if (match) shown++;
+			}
+
+			if (empty) empty.hidden = shown > 0;
+
+			// 只改查询串，不产生历史记录
+			const url = new URL(window.location.href);
+			if (category) url.searchParams.set('c', category);
+			else url.searchParams.delete('c');
+			history.replaceState(null, '', url);
+		};
+
+		root.addEventListener('click', (event) => {
+			const chip = (event.target as HTMLElement).closest<HTMLButtonElement>('.chip');
+			if (!chip) return;
+			apply(chip.dataset.category ?? '');
+		});
+
+		// 刷新 / 从外链进来时恢复选中
+		const initial = new URL(window.location.href).searchParams.get('c') ?? '';
+		apply(chips.some((c) => c.dataset.category === initial) ? initial : '');
+	}
+</script>
+
 <style>
-	.category-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-		gap: 1rem;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.category-card {
+	.filter {
 		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 2rem;
+	}
+
+	.chip {
+		display: inline-flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.9rem 1.1rem;
+		gap: 0.4rem;
+		padding: 0.35rem 0.7rem;
 		border: 1px solid var(--c-line);
-		border-radius: var(--r-md);
-		color: var(--c-ink);
-		text-decoration: none;
-		transition:
-			border-color var(--dur-fast) var(--ease),
-			color var(--dur-fast) var(--ease);
-	}
-
-	.category-card:hover {
-		border-color: var(--c-line-strong);
-		color: var(--c-accent);
-	}
-
-	.category-card-name {
+		border-radius: 999px;
+		background: transparent;
+		color: var(--c-muted);
+		font-family: inherit;
 		font-size: var(--t-ui);
-		font-weight: var(--w-medium);
-	}
-
-	.category-card-count {
-		flex: 0 0 auto;
-		min-width: 1.6rem;
-		padding: 0.05rem 0.4rem;
-		border-radius: var(--r-sm);
-		background: var(--c-soft-strong);
-		color: var(--c-quiet);
-		font-size: var(--t-meta);
-		text-align: center;
+		cursor: pointer;
 		transition:
-			background-color var(--dur-fast) var(--ease),
-			color var(--dur-fast) var(--ease);
+			color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease);
 	}
 
-	.category-card:hover .category-card-count {
+	.chip:hover {
+		border-color: var(--c-line-strong);
+		color: var(--c-ink);
+	}
+
+	.chip[aria-pressed='true'] {
+		border-color: var(--c-accent);
 		background: var(--c-accent);
 		color: var(--c-accent-ink);
+	}
+
+	.chip-count {
+		font-size: var(--t-meta);
+		color: var(--c-quiet);
+		font-variant-numeric: tabular-nums;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.chip[aria-pressed='true'] .chip-count {
+		color: color-mix(in oklab, var(--c-accent-ink) 75%, transparent);
+	}
+
+	.filter-empty {
+		margin: 2rem 0;
+		color: var(--c-quiet);
 	}
 </style>

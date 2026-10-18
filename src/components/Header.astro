@@ -196,4 +196,19 @@ import AvatarImage from '../assets/avatar.svg';
 			padding-left: 0.5rem;
 		}
 	}
+
+	/* 手机窄屏：站名文字与 GitHub 图标让位，把宽度留给导航 */
+	@media (max-width: 560px) {
+		.site-wordmark {
+			display: none;
+		}
+
+		.header-actions .icon-button {
+			display: none;
+		}
+
+		.header-actions {
+			padding-left: 0.4rem;
+		}
+	}
 </style>

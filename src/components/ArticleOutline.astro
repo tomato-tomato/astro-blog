@@ -1,0 +1,173 @@
+---
+/*
+ * 文章大纲。
+ *
+ * 两种用法（同一个组件，靠 variant 区分）：
+ *   side  右侧大纲，桌面端 sticky 吸在视口里不随页面滚走
+ *   doc   文档布局的左侧目录，整块可折叠
+ *
+ * 用 <details> 而不是 <nav> 包一层，是为了窄屏能直接折叠；
+ * 桌面端用 CSS 把 summary 藏掉，视觉上就是一个普通列表。
+ *
+ * 高亮由 BlogPost.astro 里的滚动监听负责（只认 [data-outline] a）。
+ */
+import type { TocNode } from '../lib/toc';
+
+interface Props {
+	nodes: TocNode[];
+	variant?: 'side' | 'doc';
+}
+
+const { nodes, variant = 'side' } = Astro.props;
+---
+
+{
+	nodes.length > 0 && (
+		<details class:list={['outline', `outline--${variant}`]} open data-outline>
+			<summary class="outline-summary">{variant === 'doc' ? '目录' : '本文目录'}</summary>
+			<nav class="outline-nav" aria-label={variant === 'doc' ? '文档目录' : '本文目录'}>
+				<ol class="outline-list">
+					{nodes.map((node) => (
+						<li>
+							<a href={`#${node.slug}`} data-toc-link>
+								{node.text}
+							</a>
+							{node.children.length > 0 && (
+								<ol class="outline-sub">
+									{node.children.map((child) => (
+										<li>
+											<a href={`#${child.slug}`} data-toc-link>
+												{child.text}
+											</a>
+										</li>
+									))}
+								</ol>
+							)}
+						</li>
+					))}
+				</ol>
+			</nav>
+		</details>
+	)
+}
+
+<style>
+	.outline {
+		font-size: var(--t-small);
+		line-height: var(--lh-dense);
+	}
+
+	.outline-summary {
+		display: none;
+	}
+
+	.outline-list,
+	.outline-sub {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.outline-list > li + li {
+		margin-top: 0.15rem;
+	}
+
+	.outline a {
+		display: block;
+		padding: 0.2rem 0.5rem;
+		border-left: 2px solid transparent;
+		color: var(--c-quiet);
+		text-decoration: none;
+		transition:
+			color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+	}
+
+	.outline a:hover {
+		color: var(--c-ink);
+	}
+
+	/* 当前阅读位置：强调色 + 左侧竖条 */
+	.outline a[data-active] {
+		border-left-color: var(--c-accent);
+		color: var(--c-accent);
+	}
+
+	.outline-sub {
+		padding-left: 0.75rem;
+	}
+
+	.outline-sub a {
+		font-size: var(--t-meta);
+	}
+
+	/* ---------- 右侧大纲：桌面端吸顶 ---------- */
+	.outline--side {
+		position: sticky;
+		top: calc(var(--header-h) + 1.5rem);
+		max-height: calc(100svh - var(--header-h) - 3rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	/* ---------- 左侧文档目录 ---------- */
+	.outline--doc {
+		position: sticky;
+		top: calc(var(--header-h) + 1.5rem);
+		max-height: calc(100svh - var(--header-h) - 3rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding-right: 0.25rem;
+		border-right: 1px solid var(--c-line);
+	}
+
+	.outline--doc .outline-list > li + li {
+		margin-top: 0.35rem;
+	}
+
+	.outline--doc .outline-list > li > a {
+		font-weight: var(--w-medium);
+		color: var(--c-muted);
+	}
+
+	/* 滚动条收窄，别抢视线 */
+	.outline--side::-webkit-scrollbar,
+	.outline--doc::-webkit-scrollbar {
+		width: 4px;
+	}
+
+	.outline--side::-webkit-scrollbar-thumb,
+	.outline--doc::-webkit-scrollbar-thumb {
+		border-radius: 999px;
+		background: var(--c-line);
+	}
+
+	/* ---------- 窄屏：折叠成文首的一个 details ---------- */
+	@media (max-width: 900px) {
+		.outline {
+			position: static;
+			max-height: none;
+			padding: 0;
+			border-right: 0;
+			border: 1px solid var(--c-line);
+			border-radius: var(--r-md);
+		}
+
+		.outline-summary {
+			display: block;
+			padding: 0.6rem 0.85rem;
+			color: var(--c-ink);
+			font-size: var(--t-ui);
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.outline-nav {
+			padding: 0 0.35rem 0.6rem;
+		}
+
+		.outline a {
+			padding: 0.35rem 0.5rem;
+		}
+	}
+</style>

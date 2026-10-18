@@ -161,32 +161,49 @@
 			Math.max(y, window.innerHeight - y),
 		);
 
-		/* 切到暗色 = 新快照扩散；切回亮色 = 旧快照收缩。
-		   收缩要动 ::view-transition-old，而它默认在新快照**下面**，
-		   所以先给根元素加个类，把它抬到上层（规则在 global.css）。 */
+		/* 切到暗色 = 新快照从按钮扩散；切回亮色 = 新快照上的洞收缩。
+		   两个方向都只动 ::view-transition-new —— 动 ::view-transition-old
+		   会在过渡结束时稳闪一帧旧画面（逐帧抓取确认过）。 */
 		const shrink = next === 'light';
 		const circle = (r: number) => `circle(${r}px at ${x}px ${y}px)`;
 
 		// VT 期间关掉自己的颜色过渡，否则两层动画会打架（规则在 global.css）
 		root.classList.add('theme-vt');
-		if (shrink) root.classList.add('theme-vt-shrink');
+		if (shrink) {
+			/* 收缩在新快照上挖洞实现（规则在 html.theme-vt-shrink::view-transition-new）。
+			   圆心与初始半径必须先写进变量，否则遮罩会以 0 半径起手，先闪一帧亮色。 */
+			root.style.setProperty('--vt-x', `${x}px`);
+			root.style.setProperty('--vt-y', `${y}px`);
+			root.style.setProperty('--vt-r', `${radius}px`);
+			root.classList.add('theme-vt-shrink');
+		}
 
 		const transition = startViewTransition.call(document, () => apply(next));
 
 		transition.ready
 			.then(() => {
-				root.animate(
-					{
-						clipPath: shrink ? [circle(radius), circle(0)] : [circle(0), circle(radius)],
-					},
-					{
-						duration: SWITCH_DURATION,
-						easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-						pseudoElement: shrink
-							? '::view-transition-old(root)'
-							: '::view-transition-new(root)',
-					},
-				);
+				/* 两个方向都只动 ::view-transition-new：
+				   亮 → 暗 用 clip-path 从 0 扩到满屏；
+				   暗 → 亮 用遮罩把洞从满屏收到 0。
+				   动 ::view-transition-old 会稳闪一帧旧画面（逐帧实测过）。 */
+				const keyframes = shrink
+					? ({ '--vt-r': [`${radius}px`, '0px'] } as Keyframe)
+					: ({ clipPath: [circle(0), circle(radius)] } as Keyframe);
+
+				root.animate(keyframes, {
+					duration: SWITCH_DURATION,
+					easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+					fill: 'forwards',
+					pseudoElement: '::view-transition-new(root)',
+				});
+
+				/* 动画一结束就会被回收，遮罩半径会退回内联的初值（满洞），
+				   于是新快照整个被遮住、旧快照露出来 —— 那就是「闪一下」。
+				   在动画结束前把内联值改成终态，同时把旧快照隐藏掉兜底。 */
+				window.setTimeout(() => {
+					if (shrink) root.style.setProperty('--vt-r', '0px');
+					root.classList.add('theme-vt-finishing');
+				}, SWITCH_DURATION - 40);
 			})
 			.catch(() => {
 				/* 过渡被中断，忽略 */
@@ -197,7 +214,15 @@
 				/* 同上 */
 			})
 			.finally(() => {
-				root.classList.remove('theme-vt', 'theme-vt-shrink');
+				/* finished 之后伪元素还有一小段存活时间。立刻撤掉 theme-vt-shrink
+				   会让旧快照失去 clip-path / z-index，整块重新显示一帧（闪黑）。
+				   等过渡树彻底销毁再清理。 */
+				window.setTimeout(() => {
+					root.classList.remove('theme-vt', 'theme-vt-shrink', 'theme-vt-finishing');
+					root.style.removeProperty('--vt-x');
+					root.style.removeProperty('--vt-y');
+					root.style.removeProperty('--vt-r');
+				}, 160);
 			});
 	});
 </script>

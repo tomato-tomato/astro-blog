@@ -21,6 +21,9 @@ html {
 	/* 预留滚动条空间，避免页面加载后左右抖动 */
 	scrollbar-gutter: stable;
 	-webkit-text-size-adjust: 100%;
+	/* 显式给根元素背景：否则画布底色由 body 传播而来，
+	   主题切换结束的一瞬间可能按 color-scheme 回退成浏览器默认底色（闪一下）。 */
+	background-color: var(--c-bg);
 }
 
 body {
@@ -44,12 +47,15 @@ body {
 	overflow-wrap: break-word;
 }
 
+/* 内容区与页头共用同一套宽度：
+   header 是 max-width: var(--w-page) + padding 0 1rem，
+   这里保持同样的宽度与左右内边距，两边文字才会严格对齐。 */
 main {
 	flex: 1 0 auto;
-	width: var(--w-article);
-	max-width: calc(100% - 2em);
+	width: 100%;
+	max-width: var(--w-page);
 	margin-inline: auto;
-	padding: 3em 1em;
+	padding: 3em 1rem;
 }
 
 h1,
@@ -111,6 +117,11 @@ p {
 
 .prose p {
 	margin-bottom: 1.6em;
+}
+
+/* 从大纲跳转时，标题不要被吸顶页头盖住 */
+.prose :is(h2, h3, h4) {
+	scroll-margin-top: calc(var(--header-h) + 1.5rem);
 }
 
 textarea {
@@ -234,11 +245,33 @@ hr {
 	mix-blend-mode: normal;
 }
 
-/* 暗 → 亮 是「旧快照收缩」，必须把旧快照抬到新快照上层，
-   否则收缩过程中露出来的还是它自己，看不到切换效果。
-   这个类由 ThemeToggle 在 startViewTransition 之前加上。 */
-html.theme-vt-shrink::view-transition-old(root) {
-	z-index: 1;
+/* 暗 → 亮 的收缩：不在旧快照上做动画（实测动画结束时旧快照会整块闪回一帧），
+   而是在**新快照**上挖一个洞，洞的半径从满屏收到 0 —— 视觉效果同样是「暗色收缩回按钮」。
+   洞的半径要能平滑动画，所以用注册过的自定义属性（@property）。
+   圆心与半径由 ThemeToggle 通过 --vt-x / --vt-y / --vt-r 传进来。 */
+@property --vt-r {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 0px;
+}
+
+html.theme-vt-shrink::view-transition-new(root) {
+	-webkit-mask-image: radial-gradient(
+		circle var(--vt-r) at var(--vt-x, 50%) var(--vt-y, 50%),
+		transparent 99%,
+		#000 100%
+	);
+	mask-image: radial-gradient(
+		circle var(--vt-r) at var(--vt-x, 50%) var(--vt-y, 50%),
+		transparent 99%,
+		#000 100%
+	);
+}
+
+/* 动画结束到伪元素销毁之间有一小段空档，旧快照会被重新画一帧。
+   进入收尾时把它彻底隐藏，作为最后一道保险。 */
+html.theme-vt-finishing::view-transition-old(root) {
+	opacity: 0;
 }
 
 html.theme-vt body,
@@ -260,11 +293,8 @@ html.theme-vt .prose {
 
 /* ---------- 列表类页面的容器与卡片网格 ----------
  * 文章列表 / 分类页 / 标签页 / 首页共用，避免在每个页面里重复写一遍。
+ * 宽度已由 main 统一（--w-page），这里不用再覆盖。
  */
-main.wide {
-	width: var(--w-list);
-}
-
 .post-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
