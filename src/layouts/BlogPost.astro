@@ -58,7 +58,8 @@ const book = docBooks.find((b) => b.name === category);
 	</head>
 
 	<body>
-		<Header />
+		{/* 文档阅读页的 URL 在 /blog/ 下，但顶部应高亮「文档」而非「文章」 */}
+		<Header activeHref={articleLayout === 'doc' ? '/docs' : undefined} />
 		<main class="article-shell" data-layout={articleLayout} data-has-toc={hasToc}>
 			{
 				articleLayout === 'doc' && book && (

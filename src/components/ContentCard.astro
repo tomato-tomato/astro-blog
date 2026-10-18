@@ -1,0 +1,190 @@
+---
+/*
+ * 通用内容卡片外壳。文章卡片与文档总入口卡片共用，保证外观一致。
+ *
+ * 形态取自 newechoes：描边式（无阴影），hover 只把边框变深 + 标题变色。
+ * 分类徽章在链接内部所以不可点（避免 a 嵌套 a），标签在链接外部、可点。
+ * 调用方只负责把各自的数据映射成这里的中性字段。
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import FormattedDate from './FormattedDate.astro';
+import CategoryBadge from './CategoryBadge.astro';
+import TagList from './TagList.astro';
+
+interface Props {
+	href: string;
+	title: string;
+	description?: string;
+	image?: ImageMetadata;
+	/** 分类名；不传则不显示分类徽章 */
+	category?: string;
+	/** 分类徽章旁的中性标记，如「文档集 · 2 篇」 */
+	badge?: string;
+	/** 发布日期；不传则不显示日期 */
+	date?: Date;
+	tags?: string[];
+	/** 不显示封面图 */
+	hideImage?: boolean;
+	/** 不显示摘要 */
+	hideDescription?: boolean;
+	/** 标签最多显示几个，0 表示不显示标签 */
+	maxTags?: number;
+	/** 覆盖链接的无障碍名称；不传则由标题等内容自然生成 */
+	ariaLabel?: string;
+}
+
+const {
+	href,
+	title,
+	description,
+	image,
+	category,
+	badge,
+	date,
+	tags = [],
+	hideImage = false,
+	hideDescription = false,
+	maxTags = 0,
+	ariaLabel,
+} = Astro.props;
+const showImage = !hideImage && Boolean(image);
+const showTags = maxTags > 0 && tags.length > 0;
+---
+
+<article class="content-card">
+	<a class="content-card-link" href={href} aria-label={ariaLabel}>
+		{
+			showImage && (
+				<div class="content-card-media">
+					<Image width={720} height={360} src={image!} alt="" />
+				</div>
+			)
+		}
+		<div class="content-card-body">
+			<h3 class="content-card-title" title={title}>{title}</h3>
+			{
+				!hideDescription && description && (
+					<p class="content-card-desc" title={description}>
+						{description}
+					</p>
+				)
+			}
+			{(category || badge || date) && (
+				<div class="content-card-meta">
+					{category && <CategoryBadge name={category} href={false} />}
+					{badge && <span class="content-card-badge">{badge}</span>}
+					{date && <FormattedDate date={date} />}
+				</div>
+			)}
+		</div>
+	</a>
+	{
+		showTags && (
+			<div class="content-card-tags">
+				<TagList tags={tags} max={maxTags} />
+			</div>
+		)
+	}
+</article>
+
+<style>
+	.content-card {
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		border: 1px solid var(--c-line);
+		border-radius: var(--r-md);
+		background: var(--c-bg);
+		transition: border-color var(--dur-fast) var(--ease);
+	}
+
+	.content-card:hover {
+		border-color: var(--c-line-strong);
+	}
+
+	.content-card-link {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.content-card-media {
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+		background: var(--c-soft);
+	}
+
+	.content-card-media :global(img) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		border-radius: 0;
+		object-fit: cover;
+	}
+
+	.content-card-body {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 0.8rem 0.9rem 0.7rem;
+	}
+
+	.content-card-title {
+		margin: 0;
+		overflow: hidden;
+		font-size: var(--t-card-title);
+		font-weight: var(--w-bold);
+		line-height: 1.35;
+		color: var(--c-ink);
+		/* 标题最多两行，超了省略（完整文本走 title 提示） */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.content-card:hover .content-card-title {
+		color: var(--c-accent);
+	}
+
+	.content-card-desc {
+		margin: 0;
+		overflow: hidden;
+		font-size: var(--t-small);
+		line-height: var(--lh-dense);
+		color: var(--c-muted);
+		/* 摘要只留一行，hover 出全文 */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 1;
+	}
+
+	.content-card-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: auto;
+		padding-top: 0.3rem;
+		font-size: var(--t-meta);
+		color: var(--c-quiet);
+	}
+
+	.content-card-badge {
+		display: inline-block;
+		padding: 0.1rem 0.45rem;
+		border: 1px solid var(--c-line);
+		border-radius: var(--r-sm);
+		color: var(--c-muted);
+		line-height: 1.7;
+		white-space: nowrap;
+	}
+
+	.content-card-tags {
+		padding: 0 0.9rem 0.8rem;
+	}
+</style>

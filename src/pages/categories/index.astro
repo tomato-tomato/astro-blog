@@ -6,6 +6,8 @@
  *   上  可点击的分类标签（含「全部」），点击即筛选
  *   下  文章列表（一次性全渲染，前端按 data-category 显隐）
  *
+ * 文档文章不逐篇出现：所有文档都在「文档」分类下，只出一张总入口卡片，
+ * 标题 / 封面 / 简介来自 src/content/docs/overview.md，点击直达第一篇文档。
  * 文章里的分类徽章仍然链到 /categories/<分类>，那条路径不变。
  * 这里选中某个分类时不跳转，只改 ?c=，方便分享与刷新后保持选中。
  */
@@ -14,10 +16,14 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PostCard from '../../components/PostCard.astro';
+import DocOverviewCard from '../../components/DocOverviewCard.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getCategory, getPosts, groupByCategory } from '../../lib/posts';
+import { getCategory, getDocBooks, getDocsOverview, getPosts, groupByCategory } from '../../lib/posts';
 
 const posts = await getPosts();
+const articles = posts.filter((post) => post.data.articleLayout !== 'doc');
+const docBook = getDocBooks(posts)[0];
+const overview = docBook ? await getDocsOverview() : undefined;
 const categories = groupByCategory(posts);
 const total = posts.length;
 ---
@@ -49,11 +55,20 @@ const total = posts.length;
 						</div>
 
 						<ul class="post-grid" data-post-list>
-							{posts.map((post) => (
-								<li data-category={getCategory(post)}>
-									<PostCard post={post} />
-								</li>
-							))}
+							{
+								docBook && overview && (
+									<li data-category="文档">
+										<DocOverviewCard overview={overview} book={docBook} />
+									</li>
+								)
+							}
+							{
+								articles.map((post) => (
+									<li data-category={getCategory(post)}>
+										<PostCard post={post} />
+									</li>
+								))
+							}
 						</ul>
 
 						<p class="filter-empty" data-filter-empty hidden>

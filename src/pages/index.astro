@@ -22,11 +22,11 @@ import Footer from '../components/Footer.astro';
 import PostCard from '../components/PostCard.astro';
 import type { ISourceOptions } from '@tsparticles/engine';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
-import { getPosts } from '../lib/posts';
+import { getArticles } from '../lib/posts';
 import HeroImage from '../assets/hero.svg';
 
-const posts = await getPosts();
-const latest = posts.slice(0, 3);
+// 首页只展示普通文章；文档文章归「文档」板块，不在最新文章里混排
+const latest = (await getArticles()).slice(0, 3);
 
 /* 粒子配色与站点强调色同源（react.dev）。
    这里写的是亮色值，客户端脚本会在挂载后按当前主题覆盖。 */

@@ -28,4 +28,17 @@ const blog = defineCollection({
 		}),
 });
 
-export const collections = { blog };
+// 文档总入口的元数据（标题 / 封面 / 简介）。
+// 与具体的文档文章分开：分类页的「文档」卡片和 /docs/ 都读这一份，
+// 这样卡片展示的是文档集自己的介绍，而不是借第一篇文档的。
+const docs = defineCollection({
+	loader: glob({ base: "./src/content/docs", pattern: "**/*.{md,mdx}" }),
+	schema: ({ image }) =>
+		z.object({
+			title: z.string(),
+			description: z.string(),
+			heroImage: image().optional(),
+		}),
+});
+
+export const collections = { blog, docs };

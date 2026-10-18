@@ -1,0 +1,30 @@
+---
+/*
+ * 文档总入口卡片：分类页「文档」分类唯一的一张卡片。
+ *
+ * 标题 / 封面 / 简介来自 src/content/docs/overview.md，而不是第一篇文档；
+ * 点击直达第一篇文档，左侧目录会以第一篇为当前项。
+ */
+import ContentCard from './ContentCard.astro';
+import { docBookHref, type DocBook, type DocOverview } from '../lib/posts';
+
+interface Props {
+	overview: DocOverview;
+	book: DocBook;
+}
+
+const { overview, book } = Astro.props;
+const { title, description, heroImage } = overview.data;
+const count = book.posts.length;
+const first = book.posts[0];
+---
+
+<ContentCard
+	href={docBookHref(book)}
+	title={title}
+	description={description}
+	image={heroImage}
+	category="文档"
+	badge={`${count} 篇文档`}
+	ariaLabel={`${title}：共 ${count} 篇文档，从《${first.data.title}》开始阅读`}
+/>

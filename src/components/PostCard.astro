@@ -2,14 +2,10 @@
 /*
  * 文章卡片。列表页 / 分类页 / 标签页 / 首页共用。
  *
- * 卡片形态取自 newechoes：描边式（无阴影），hover 只把边框变深 + 标题变色。
- * 分类徽章在链接内部所以不可点（避免 a 嵌套 a），标签在链接外部、可点。
+ * 只是把 Post 映射到 ContentCard 的中性字段，外观与交互全在 ContentCard 里。
  */
-import { Image } from 'astro:assets';
+import ContentCard from './ContentCard.astro';
 import { getCategory, postHref, type Post } from '../lib/posts';
-import FormattedDate from './FormattedDate.astro';
-import CategoryBadge from './CategoryBadge.astro';
-import TagList from './TagList.astro';
 
 interface Props {
 	post: Post;
@@ -19,134 +15,34 @@ interface Props {
 	hideDescription?: boolean;
 	/** 标签最多显示几个，0 表示不显示标签 */
 	maxTags?: number;
+	/** 分类徽章旁的中性标记，如「文档集 · 2 篇」 */
+	badge?: string;
+	/** 覆盖链接的无障碍名称；不传则由标题等内容自然生成 */
+	ariaLabel?: string;
 }
 
-const { post, hideImage = false, hideDescription = false, maxTags = 3 } = Astro.props;
+const {
+	post,
+	hideImage = false,
+	hideDescription = false,
+	maxTags = 3,
+	badge,
+	ariaLabel,
+} = Astro.props;
 const { title, description, pubDate, heroImage, tags } = post.data;
-const category = getCategory(post);
-const showImage = !hideImage && Boolean(heroImage);
 ---
 
-<article class="post-card">
-	<a class="post-card-link" href={postHref(post)}>
-		{
-			showImage && (
-				<div class="post-card-media">
-					<Image width={720} height={360} src={heroImage!} alt="" />
-				</div>
-			)
-		}
-		<div class="post-card-body">
-			<h3 class="post-card-title" title={title}>{title}</h3>
-			{
-				!hideDescription && description && (
-					<p class="post-card-desc" title={description}>
-						{description}
-					</p>
-				)
-			}
-			<div class="post-card-meta">
-				<CategoryBadge name={category} href={false} />
-				<FormattedDate date={pubDate} />
-			</div>
-		</div>
-	</a>
-	{
-		maxTags > 0 && tags.length > 0 && (
-			<div class="post-card-tags">
-				<TagList tags={tags} max={maxTags} />
-			</div>
-		)
-	}
-</article>
-
-<style>
-	.post-card {
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		border: 1px solid var(--c-line);
-		border-radius: var(--r-md);
-		background: var(--c-bg);
-		transition: border-color var(--dur-fast) var(--ease);
-	}
-
-	.post-card:hover {
-		border-color: var(--c-line-strong);
-	}
-
-	.post-card-link {
-		display: flex;
-		flex: 1 1 auto;
-		flex-direction: column;
-		color: inherit;
-		text-decoration: none;
-	}
-
-	.post-card-media {
-		aspect-ratio: 16 / 9;
-		overflow: hidden;
-		background: var(--c-soft);
-	}
-
-	.post-card-media :global(img) {
-		display: block;
-		width: 100%;
-		height: 100%;
-		border-radius: 0;
-		object-fit: cover;
-	}
-
-	.post-card-body {
-		display: flex;
-		flex: 1 1 auto;
-		flex-direction: column;
-		gap: 0.4rem;
-		padding: 0.8rem 0.9rem 0.7rem;
-	}
-
-	.post-card-title {
-		margin: 0;
-		overflow: hidden;
-		font-size: var(--t-card-title);
-		font-weight: var(--w-bold);
-		line-height: 1.35;
-		color: var(--c-ink);
-		/* 标题最多两行，超了省略（完整文本走 title 提示） */
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		transition: color var(--dur-fast) var(--ease);
-	}
-
-	.post-card:hover .post-card-title {
-		color: var(--c-accent);
-	}
-
-	.post-card-desc {
-		margin: 0;
-		overflow: hidden;
-		font-size: var(--t-small);
-		line-height: var(--lh-dense);
-		color: var(--c-muted);
-		/* 摘要只留一行，hover 出全文 */
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 1;
-	}
-
-	.post-card-meta {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.4rem;
-		margin-top: auto;
-		padding-top: 0.3rem;
-		font-size: var(--t-meta);
-		color: var(--c-quiet);
-	}
-
-	.post-card-tags {
-		padding: 0 0.9rem 0.8rem;
-	}
-</style>
+<ContentCard
+	href={postHref(post)}
+	title={title}
+	description={description}
+	image={heroImage}
+	category={getCategory(post)}
+	badge={badge}
+	date={pubDate}
+	tags={tags}
+	hideImage={hideImage}
+	hideDescription={hideDescription}
+	maxTags={maxTags}
+	ariaLabel={ariaLabel}
+/>

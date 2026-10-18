@@ -2,47 +2,73 @@
 /*
  * 全部文档集：/docs/
  *
- * 每本「书」= 一个分类下的 doc 版式文章。这里只是索引，
- * 具体目录在 /docs/<分类>/。
+ * 每本「书」= 一个分类下的 doc 版式文章。
+ * 卡片展示总入口的封面与简介（src/content/docs/overview.md），
+ * 再列前 4 篇文档的简介，整卡直接进入第一篇；
+ * 完整目录仍在 /docs/<分类>/，从文档页左栏的「总览」进入。
  */
+import { Image } from 'astro:assets';
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { bookHref, getDocBooks, getPosts, postHref } from '../../lib/posts';
+import { docBookHref, getDocBooks, getDocsOverview, getPosts } from '../../lib/posts';
 
 const books = getDocBooks(await getPosts());
+const overview = books.length > 0 ? await getDocsOverview() : undefined;
+const total = books.reduce((n, book) => n + book.posts.length, 0);
+const { title, description, heroImage } = overview?.data ?? {};
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
-		<BaseHead title={`文档 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<BaseHead
+			title={`${title ?? '文档'} | ${SITE_TITLE}`}
+			description={description ?? SITE_DESCRIPTION}
+		/>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<PageHeader title="文档" meta={`共 ${books.length} 个文档集`} />
+			<PageHeader title={title ?? '文档'} meta={`共 ${total} 篇文档`} />
 
 			{
 				books.length > 0 ? (
 					<ul class="book-grid">
 						{books.map((book) => (
 							<li>
-								<article class="book-card">
-									<a class="book-card-head" href={bookHref(book.name)}>
-										<h2>{book.name}</h2>
-										<span class="book-card-count">{book.posts.length} 篇</span>
-									</a>
-									<ol class="book-card-list">
-										{book.posts.slice(0, 4).map((post) => (
-											<li>
-												<a href={postHref(post)}>{post.data.title}</a>
-											</li>
-										))}
-									</ol>
-								</article>
+								{/* 整卡直达第一篇文档，省掉中间的文章清单页 */}
+								<a
+									class="book-card"
+									href={docBookHref(book)}
+									aria-label={`${title ?? book.name} 文档集，共 ${book.posts.length} 篇，从第一篇开始阅读`}
+								>
+									{heroImage && (
+										<div class="book-card-media">
+											<Image width={720} height={360} src={heroImage} alt="" />
+										</div>
+									)}
+									<div class="book-card-body">
+										<div class="book-card-head">
+											<h2 class="book-card-title">{title ?? book.name}</h2>
+											<span class="book-card-count">{book.posts.length} 篇</span>
+										</div>
+										{description && (
+											<p class="book-card-desc" title={description}>
+												{description}
+											</p>
+										)}
+										<ul class="book-card-summaries">
+											{book.posts.slice(0, 4).map((post) => (
+												<li class="book-card-summary" title={post.data.description}>
+													{post.data.description}
+												</li>
+											))}
+										</ul>
+									</div>
+								</a>
 							</li>
 						))}
 					</ul>
@@ -66,10 +92,14 @@ const books = getDocBooks(await getPosts());
 	}
 
 	.book-card {
+		display: flex;
+		flex-direction: column;
 		height: 100%;
-		padding: 1.1rem 1.2rem 1rem;
+		overflow: hidden;
 		border: 1px solid var(--c-line);
 		border-radius: var(--r-md);
+		color: inherit;
+		text-decoration: none;
 		transition: border-color var(--dur-fast) var(--ease);
 	}
 
@@ -77,18 +107,50 @@ const books = getDocBooks(await getPosts());
 		border-color: var(--c-line-strong);
 	}
 
+	.book-card-media {
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+		background: var(--c-soft);
+	}
+
+	.book-card-media :global(img) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.book-card-body {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		padding: 1.1rem 1.2rem 1rem;
+	}
+
 	.book-card-head {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 1rem;
-		color: var(--c-ink);
-		text-decoration: none;
 	}
 
-	.book-card-head h2 {
+	.book-card-title {
 		margin: 0;
+		color: var(--c-ink);
 		font-size: var(--t-h3);
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	.book-card:hover .book-card-title {
+		color: var(--c-accent);
+	}
+
+	.book-card-desc {
+		margin: 0.45rem 0 0;
+		color: var(--c-muted);
+		font-size: var(--t-small);
+		line-height: var(--lh-dense);
+		overflow-wrap: anywhere;
 	}
 
 	.book-card-count {
@@ -97,20 +159,26 @@ const books = getDocBooks(await getPosts());
 		white-space: nowrap;
 	}
 
-	.book-card-list {
-		margin: 0.75rem 0 0;
-		padding-left: 1.1rem;
+	.book-card-summaries {
+		display: grid;
+		gap: 0.5rem;
+		margin: 0.8rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* 两行截断；不足两行的也占满两行高度，卡片列表看起来才整齐 */
+	.book-card-summary {
+		display: -webkit-box;
+		overflow: hidden;
+		min-height: 2.8em;
+		min-height: 2lh;
 		color: var(--c-muted);
 		font-size: var(--t-small);
-		line-height: 1.9;
-	}
-
-	.book-card-list a {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	.book-card-list a:hover {
-		color: var(--c-accent);
+		line-height: var(--lh-dense);
+		overflow-wrap: anywhere;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
 	}
 </style>

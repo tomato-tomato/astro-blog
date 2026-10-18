@@ -2,14 +2,18 @@
 /*
  * 单个分类的文章列表。
  * 分类由目录推导，见 src/lib/posts.ts 的 getCategory()。
+ *
+ * 文档文章不逐篇散开：所有文档都在「文档」分类下，只出一张总入口卡片，
+ * 标题 / 封面 / 简介来自 src/content/docs/overview.md，点击直达第一篇文档。
  */
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PostCard from '../../components/PostCard.astro';
+import DocOverviewCard from '../../components/DocOverviewCard.astro';
 import { SITE_TITLE } from '../../consts';
-import { getPosts, groupByCategory, type Post } from '../../lib/posts';
+import { getDocBooks, getDocsOverview, getPosts, groupByCategory, type Post } from '../../lib/posts';
 
 export async function getStaticPaths() {
 	const posts = await getPosts();
@@ -25,6 +29,16 @@ interface Props {
 }
 
 const { category, posts } = Astro.props;
+const docPosts = posts.filter((post) => post.data.articleLayout === 'doc');
+const articles = posts.filter((post) => post.data.articleLayout !== 'doc');
+const docBook = docPosts.length > 0 ? getDocBooks(posts)[0] : undefined;
+const overview = docBook ? await getDocsOverview() : undefined;
+const meta =
+	docPosts.length === posts.length
+		? `共 ${posts.length} 篇文档`
+		: docPosts.length > 0
+			? `共 ${posts.length} 篇 · 其中 ${docPosts.length} 篇文档`
+			: `共 ${posts.length} 篇`;
 ---
 
 <!doctype html>
@@ -40,16 +54,25 @@ const { category, posts } = Astro.props;
 		<main>
 			<PageHeader
 				title={category}
-				meta={`共 ${posts.length} 篇`}
+				meta={meta}
 				backHref="/categories"
 				backText="全部分类"
 			/>
 			<ul class="post-grid">
-				{posts.map((post) => (
-					<li>
-						<PostCard post={post} />
-					</li>
-				))}
+				{
+					docBook && overview && (
+						<li>
+							<DocOverviewCard overview={overview} book={docBook} />
+						</li>
+					)
+				}
+				{
+					articles.map((post) => (
+						<li>
+							<PostCard post={post} />
+						</li>
+					))
+				}
 			</ul>
 		</main>
 		<Footer />
