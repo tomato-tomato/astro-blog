@@ -37,10 +37,12 @@ const showImage = !hideImage && Boolean(heroImage);
 			)
 		}
 		<div class="post-card-body">
-			<h3 class="post-card-title">{title}</h3>
+			<h3 class="post-card-title" title={title}>{title}</h3>
 			{
 				!hideDescription && description && (
-					<p class="post-card-desc">{description}</p>
+					<p class="post-card-desc" title={description}>
+						{description}
+					</p>
 				)
 			}
 			<div class="post-card-meta">
@@ -99,16 +101,21 @@ const showImage = !hideImage && Boolean(heroImage);
 		display: flex;
 		flex: 1 1 auto;
 		flex-direction: column;
-		gap: 0.5rem;
-		padding: 1.1rem 1.15rem 0.9rem;
+		gap: 0.4rem;
+		padding: 0.8rem 0.9rem 0.7rem;
 	}
 
 	.post-card-title {
 		margin: 0;
-		font-size: var(--t-h3);
+		overflow: hidden;
+		font-size: var(--t-card-title);
 		font-weight: var(--w-bold);
-		line-height: var(--lh-head);
+		line-height: 1.35;
 		color: var(--c-ink);
+		/* 标题最多两行，超了省略（完整文本走 title 提示） */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
 		transition: color var(--dur-fast) var(--ease);
 	}
 
@@ -118,23 +125,28 @@ const showImage = !hideImage && Boolean(heroImage);
 
 	.post-card-desc {
 		margin: 0;
+		overflow: hidden;
 		font-size: var(--t-small);
 		line-height: var(--lh-dense);
 		color: var(--c-muted);
+		/* 摘要只留一行，hover 出全文 */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 1;
 	}
 
 	.post-card-meta {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		margin-top: auto;
-		padding-top: 0.35rem;
+		padding-top: 0.3rem;
 		font-size: var(--t-meta);
 		color: var(--c-quiet);
 	}
 
 	.post-card-tags {
-		padding: 0 1.15rem 1.1rem;
+		padding: 0 0.9rem 0.8rem;
 	}
 </style>

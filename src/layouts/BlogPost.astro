@@ -16,7 +16,9 @@ import FormattedDate from '../components/FormattedDate.astro';
 import CategoryBadge from '../components/CategoryBadge.astro';
 import TagList from '../components/TagList.astro';
 import ArticleOutline from '../components/ArticleOutline.astro';
+import DocSidebar from '../components/DocSidebar.astro';
 import { buildToc, type Heading } from '../lib/toc';
+import { bookHref, getDocBooks, getPosts } from '../lib/posts';
 import { Image } from 'astro:assets';
 
 // category 由 blog/[...slug].astro 传入（分类从目录推导）；
@@ -24,6 +26,8 @@ import { Image } from 'astro:assets';
 type Props = CollectionEntry<'blog'>['data'] & {
 	category?: string;
 	headings?: Heading[];
+	/** 当前文章 id，用于在文档目录里标出「你在这里」 */
+	postId?: string;
 };
 
 const {
@@ -34,12 +38,18 @@ const {
 	heroImage,
 	category,
 	tags = [],
-	layout = 'post',
+	articleLayout = 'post',
 	headings = [],
+	postId,
 } = Astro.props;
 
 const toc = buildToc(headings);
 const hasToc = toc.length > 0;
+
+// 文档版式才需要目录：分类 = 一本书，左栏只列当前这本，
+// 保证点哪一篇都能原地切换（跨书就得整页跳）
+const docBooks = articleLayout === 'doc' ? getDocBooks(await getPosts()) : [];
+const book = docBooks.find((b) => b.name === category);
 ---
 
 <html lang="en">
@@ -49,8 +59,17 @@ const hasToc = toc.length > 0;
 
 	<body>
 		<Header />
-		<main class="article-shell" data-layout={layout} data-has-toc={hasToc}>
-			{layout === 'doc' && hasToc && <ArticleOutline nodes={toc} variant="doc" />}
+		<main class="article-shell" data-layout={articleLayout} data-has-toc={hasToc}>
+			{
+				articleLayout === 'doc' && book && (
+					<DocSidebar
+						bookName={book.name}
+						pages={book.posts}
+						currentId={postId ?? ''}
+						homeHref={bookHref(book.name)}
+					/>
+				)
+			}
 
 			<article class="article-main">
 				{
@@ -82,73 +101,179 @@ const hasToc = toc.length > 0;
 				</div>
 			</article>
 
-			{hasToc && <ArticleOutline nodes={toc} variant="side" />}
+			{hasToc && <ArticleOutline nodes={toc} />}
 		</main>
 		<Footer />
 	</body>
 </html>
 
 <script>
-	/* 大纲高亮：找出「已经滚过视口上沿」的最后一个标题，标给对应链接。
-	   左右两份大纲共用同一套 data 属性，一次处理两边。 */
-	const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-outline] a[href^="#"]'));
+	/* ---------- 大纲高亮 ----------
+	   找出「已经滚过视口上沿」的最后一个标题，标给对应链接。
+	   文档版式切换文章后会重新 collect() 一次，所以这些状态放在外层变量里。 */
+	let links: HTMLAnchorElement[] = [];
+	let byId = new Map<string, HTMLAnchorElement[]>();
+	let targets: HTMLElement[] = [];
+	let active = '';
 
-	if (links.length > 0) {
-		const byId = new Map<string, HTMLAnchorElement[]>();
+	const collect = () => {
+		links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-outline] a[href^="#"]'));
+		byId = new Map();
 		for (const a of links) {
 			const id = decodeURIComponent(a.hash.slice(1));
 			const list = byId.get(id);
 			if (list) list.push(a);
 			else byId.set(id, [a]);
 		}
-
-		const targets = Array.from(byId.keys())
+		targets = Array.from(byId.keys())
 			.map((id) => document.getElementById(id))
 			.filter((el): el is HTMLElement => Boolean(el));
+		active = '';
+	};
 
-		let active = '';
+	const update = () => {
+		if (targets.length === 0) return;
+		const line = window.scrollY + 96; // 页头高度 + 一点余量
+		let current = targets[0].id;
+		for (const el of targets) {
+			if (el.getBoundingClientRect().top + window.scrollY <= line) current = el.id;
+			else break;
+		}
+		if (current === active) return;
+		active = current;
+		for (const a of links) a.removeAttribute('data-active');
+		for (const a of byId.get(current) ?? []) a.setAttribute('data-active', '');
+	};
 
-		const setActive = (id: string) => {
-			if (id === active) return;
-			active = id;
-			for (const a of links) a.removeAttribute('data-active');
-			for (const a of byId.get(id) ?? []) a.setAttribute('data-active', '');
-		};
+	let ticking = false;
+	const onScroll = () => {
+		if (ticking) return;
+		ticking = true;
+		requestAnimationFrame(() => {
+			ticking = false;
+			update();
+		});
+	};
 
-		const update = () => {
-			if (targets.length === 0) return;
-			const line = window.scrollY + 96; // 页头高度 + 一点余量
-			let current = targets[0].id;
-			for (const el of targets) {
-				if (el.getBoundingClientRect().top + window.scrollY <= line) current = el.id;
-				else break;
+	window.addEventListener('scroll', onScroll, { passive: true });
+	window.addEventListener('resize', onScroll, { passive: true });
+
+	/* ---------- 窄屏折叠 ----------
+	   大纲 / 文档目录在窄屏会变成文首的折叠块，默认收起，别把正文顶下去。 */
+	const collapseOnNarrow = () => {
+		const narrow = window.matchMedia('(max-width: 900px)').matches;
+		for (const el of document.querySelectorAll<HTMLDetailsElement>(
+			'details.outline, details.doc-nav',
+		)) {
+			el.open = !narrow;
+		}
+	};
+
+	collect();
+	update();
+	collapseOnNarrow();
+	window.matchMedia('(max-width: 900px)').addEventListener('change', collapseOnNarrow);
+
+	/* ---------- 文档版式：左侧点文章，原地换右侧 ----------
+	   不整页跳转：fetch 目标页 → 只替换 .article-main 与 .outline → pushState 同步地址。
+	   这样刷新、分享、前进后退都还是对的那一篇。 */
+	const shell = document.querySelector<HTMLElement>('main.article-shell[data-layout="doc"]');
+
+	if (shell) {
+		const docNav = shell.querySelector<HTMLElement>('.doc-nav');
+		let busy = false;
+
+		const setCurrent = (pathname: string) => {
+			for (const a of shell.querySelectorAll<HTMLAnchorElement>('.doc-nav a')) {
+				if (new URL(a.href).pathname === pathname) a.setAttribute('aria-current', 'page');
+				else a.removeAttribute('aria-current');
 			}
-			setActive(current);
 		};
 
-		let ticking = false;
-		const onScroll = () => {
-			if (ticking) return;
-			ticking = true;
-			requestAnimationFrame(() => {
-				ticking = false;
+		const swap = async (href: string, push: boolean) => {
+			if (busy) return;
+			busy = true;
+			shell.dataset.loading = '';
+
+			try {
+				const res = await fetch(href, { headers: { accept: 'text/html' } });
+				if (!res.ok) throw new Error(String(res.status));
+
+				const next = new DOMParser().parseFromString(await res.text(), 'text/html');
+				const nextShell = next.querySelector<HTMLElement>('main.article-shell');
+
+				// 目标不是文档版式（没有左目录）就走正常跳转，别把导航弄丢
+				if (!nextShell || nextShell.dataset.layout !== 'doc') {
+					location.href = href;
+					return;
+				}
+
+				// 跨文档集（换了另一本书）也整页跳，左栏才对得上
+				const curNav = shell.querySelector<HTMLElement>('.doc-nav');
+				const nextNav = nextShell.querySelector<HTMLElement>('.doc-nav');
+				if (!curNav || !nextNav || curNav.dataset.book !== nextNav.dataset.book) {
+					location.href = href;
+					return;
+				}
+
+				const nextArticle = nextShell.querySelector('.article-main');
+				const curArticle = shell.querySelector('.article-main');
+				if (!nextArticle || !curArticle) {
+					location.href = href;
+					return;
+				}
+
+				curArticle.replaceWith(document.importNode(nextArticle, true));
+
+				const curOutline = shell.querySelector('.outline');
+				const nextOutline = nextShell.querySelector('.outline');
+				if (nextOutline) {
+					const node = document.importNode(nextOutline, true);
+					if (curOutline) curOutline.replaceWith(node);
+					else shell.append(node);
+				} else if (curOutline) {
+					curOutline.remove();
+				}
+
+				shell.dataset.hasToc = nextShell.dataset.hasToc ?? 'false';
+				setCurrent(new URL(href, location.href).pathname);
+
+				document.title = next.title;
+				const nextDesc = next.querySelector('meta[name="description"]');
+				const curDesc = document.querySelector('meta[name="description"]');
+				if (nextDesc && curDesc) curDesc.setAttribute('content', nextDesc.getAttribute('content') ?? '');
+
+				if (push) history.pushState({ doc: true }, '', href);
+
+				window.scrollTo({ top: 0 });
+				collect();
 				update();
-			});
-		};
-
-		window.addEventListener('scroll', onScroll, { passive: true });
-		window.addEventListener('resize', onScroll, { passive: true });
-		update();
-
-		/* 窄屏下大纲会变成文首的折叠块，默认收起，别把正文顶下去 */
-		const collapseOnNarrow = () => {
-			const narrow = window.matchMedia('(max-width: 900px)').matches;
-			for (const el of document.querySelectorAll<HTMLDetailsElement>('details.outline')) {
-				el.open = !narrow;
+				collapseOnNarrow();
+			} catch {
+				location.href = href;
+			} finally {
+				busy = false;
+				delete shell.dataset.loading;
 			}
 		};
-		collapseOnNarrow();
-		window.matchMedia('(max-width: 900px)').addEventListener('change', collapseOnNarrow);
+
+		docNav?.addEventListener('click', (event) => {
+			const a = (event.target as HTMLElement).closest<HTMLAnchorElement>('a');
+			if (!a) return;
+			// 新标签页 / 中键 / 带修饰键：交给浏览器
+			if (a.target === '_blank' || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+				return;
+
+			const path = new URL(a.href).pathname;
+			event.preventDefault();
+			if (path === location.pathname) return;
+			void swap(a.getAttribute('href') ?? a.href, true);
+		});
+
+		// 浏览器前进 / 后退
+		window.addEventListener('popstate', () => {
+			void swap(location.pathname, false);
+		});
 	}
 </script>
 
@@ -156,8 +281,8 @@ const hasToc = toc.length > 0;
 	/* ---------- 版式网格 ---------- */
 	main.article-shell {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 15rem;
-		gap: 3rem;
+		grid-template-columns: minmax(0, 1fr) 12rem;
+		gap: 2.5rem;
 		align-items: start;
 	}
 
@@ -166,21 +291,35 @@ const hasToc = toc.length > 0;
 	}
 
 	main.article-shell[data-layout='doc'] {
-		grid-template-columns: 12rem minmax(0, 1fr) 13rem;
-		gap: 2.5rem;
+		grid-template-columns: 13rem minmax(0, 1fr) 11rem;
+		gap: 2rem;
 	}
 
 	main.article-shell[data-layout='doc'][data-has-toc='false'] {
-		grid-template-columns: 12rem minmax(0, 1fr);
+		grid-template-columns: 13rem minmax(0, 1fr);
+	}
+
+	/* 正文是主角：整块（封面 / 标题 / 正文）统一一个宽度并居中，
+	   不随列宽变化 —— 否则会出现「封面 838、正文 704」这种参差。 */
+	.article-main {
+		width: 100%;
+		max-width: 46rem;
+		margin-inline: auto;
+		transition: opacity 140ms var(--ease);
+	}
+
+	/* 文档版式原地换文章时，正文淡一下表示正在取下一篇 */
+	main.article-shell[data-loading] .article-main {
+		opacity: 0.4;
 	}
 
 	/* 文档版式下右侧大纲先让位，正文别被挤成窄条 */
 	@media (max-width: 1180px) {
 		main.article-shell[data-layout='doc'] {
-			grid-template-columns: 12rem minmax(0, 1fr);
+			grid-template-columns: 13rem minmax(0, 1fr);
 		}
 
-		main.article-shell[data-layout='doc'] :global(.outline--side) {
+		main.article-shell[data-layout='doc'] :global(.outline) {
 			display: none;
 		}
 	}
@@ -193,8 +332,9 @@ const hasToc = toc.length > 0;
 			gap: 1.5rem;
 		}
 
-		/* 大纲折叠块排到正文前面 */
-		main.article-shell :global(.outline) {
+		/* 大纲 / 文档目录折叠块排到正文前面 */
+		main.article-shell :global(.outline),
+		main.article-shell :global(.doc-nav) {
 			order: -1;
 		}
 	}
@@ -246,11 +386,6 @@ const hasToc = toc.length > 0;
 		font-size: var(--t-lead);
 		line-height: var(--lh-copy);
 		color: var(--c-body);
-	}
-
-	/* 正文单行长度控制在约 40 个汉字，列再宽也不铺满 */
-	.prose > :global(*) {
-		max-width: 44rem;
 	}
 
 	@media (max-width: 720px) {

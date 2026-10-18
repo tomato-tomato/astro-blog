@@ -297,8 +297,9 @@ html.theme-vt .prose {
  */
 .post-grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 1.5rem;
+	/* 卡片做小一点，宽屏一行能排到 4 张 */
+	grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
+	gap: 1.25rem;
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -307,7 +308,7 @@ html.theme-vt .prose {
 @media (max-width: 720px) {
 	.post-grid {
 		grid-template-columns: minmax(0, 1fr);
-		gap: 1.25rem;
+		gap: 1rem;
 	}
 }
 

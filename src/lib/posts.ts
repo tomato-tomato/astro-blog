@@ -90,8 +90,40 @@ export function groupByYearMonth(posts: Post[]): YearGroup[] {
 		.sort((a, b) => Number(b.year) - Number(a.year));
 }
 
-/** 时间轴左侧的月份名 */
-export const MONTH_NAMES = [
+/* ---------- 文档集（doc 版式）----------
+ * 约定：分类 = 一本书。`articleLayout: doc` 的文章按分类归入各自的文档集，
+ * 集内按 `docOrder`（小的在前）排，同序再按发布时间。
+ * 文档集的总入口是 /docs/<分类>/，左侧目录只列当前这一本。
+ */
+export type DocBook = { name: string; posts: Post[] };
+
+export function getDocBooks(posts: Post[]): DocBook[] {
+	const map = new Map<string, Post[]>();
+
+	for (const post of posts) {
+		if (post.data.articleLayout !== 'doc') continue;
+		const name = getCategory(post);
+		if (!map.has(name)) map.set(name, []);
+		map.get(name)!.push(post);
+	}
+
+	return [...map]
+		.map(([name, list]) => ({
+			name,
+			posts: [...list].sort(
+				(a, b) =>
+					a.data.docOrder - b.data.docOrder || a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
+			),
+		}))
+		.sort((a, b) => b.posts.length - a.posts.length || a.name.localeCompare(b.name, 'zh'));
+}
+
+/** 文档集总入口路径 */
+export function bookHref(book: string): string {
+	return `/docs/${book}/`;
+}
+
+/** 时间轴左侧的月份名 */export const MONTH_NAMES = [
 	'一月',
 	'二月',
 	'三月',

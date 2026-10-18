@@ -1,0 +1,167 @@
+---
+/*
+ * 文档版式的左侧目录 —— 列的是**当前文档集里的文章**，不是当前文章的小标题。
+ *
+ * 一本书 = 一个分类下的 doc 文章，顺序由 docOrder 决定；
+ * 顶部有「总览」链接回到 /docs/<分类>/（那才是总入口）。
+ * 整块是 <details>，窄屏折叠、桌面端常开。
+ */
+import { postHref, type Post } from '../lib/posts';
+
+interface Props {
+	bookName: string;
+	pages: Post[];
+	currentId: string;
+	homeHref: string;
+}
+
+const { bookName, pages, currentId, homeHref } = Astro.props;
+---
+
+{
+	pages.length > 0 && (
+		<details class="doc-nav" open data-book={bookName}>
+			<summary class="doc-nav-summary">{bookName} · 目录</summary>
+			<nav class="doc-nav-body" aria-label={`${bookName} 文档目录`}>
+				<a class="doc-nav-home" href={homeHref}>
+					<span aria-hidden="true">←</span> {bookName} · 总览
+				</a>
+				<ol class="doc-list">
+					{pages.map((post, i) => (
+						<li>
+							<a
+								href={postHref(post)}
+								title={post.data.title}
+								aria-current={post.id === currentId ? 'page' : undefined}
+							>
+								<span class="doc-no">{String(i + 1).padStart(2, '0')}</span>
+								<span class="doc-title">{post.data.title}</span>
+							</a>
+						</li>
+					))}
+				</ol>
+			</nav>
+		</details>
+	)
+}
+
+<style>
+	.doc-nav {
+		font-size: var(--t-small);
+		line-height: var(--lh-dense);
+	}
+
+	.doc-nav-summary {
+		display: none;
+	}
+
+	.doc-nav-home {
+		display: block;
+		margin-bottom: 0.6rem;
+		padding: 0.25rem 0.55rem;
+		border-radius: var(--r-sm);
+		color: var(--c-muted);
+		font-size: var(--t-meta);
+		text-decoration: none;
+		transition:
+			color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease);
+	}
+
+	.doc-nav-home:hover {
+		color: var(--c-accent);
+		background: var(--c-soft);
+	}
+
+	.doc-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.doc-list a {
+		display: flex;
+		gap: 0.45rem;
+		padding: 0.25rem 0.55rem;
+		border-left: 2px solid transparent;
+		color: var(--c-muted);
+		text-decoration: none;
+		transition:
+			color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+	}
+
+	.doc-list a:hover {
+		color: var(--c-ink);
+	}
+
+	.doc-list a[aria-current='page'] {
+		border-left-color: var(--c-accent);
+		color: var(--c-accent);
+		font-weight: var(--w-medium);
+	}
+
+	.doc-no {
+		flex: 0 0 auto;
+		color: var(--c-quiet);
+		font-family: var(--font-mono);
+		font-size: var(--t-meta);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.doc-list a[aria-current='page'] .doc-no {
+		color: inherit;
+	}
+
+	.doc-title {
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	/* ---------- 桌面端：吸顶，右侧细线分隔 ---------- */
+	.doc-nav {
+		position: sticky;
+		top: calc(var(--header-h) + 1.5rem);
+		max-height: calc(100svh - var(--header-h) - 3rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding-right: 0.75rem;
+		border-right: 1px solid var(--c-line);
+	}
+
+	.doc-nav::-webkit-scrollbar {
+		width: 4px;
+	}
+
+	.doc-nav::-webkit-scrollbar-thumb {
+		border-radius: 999px;
+		background: var(--c-line);
+	}
+
+	/* ---------- 窄屏：折叠成文首的一个 details ---------- */
+	@media (max-width: 900px) {
+		.doc-nav {
+			position: static;
+			max-height: none;
+			padding: 0;
+			border-right: 0;
+			border: 1px solid var(--c-line);
+			border-radius: var(--r-md);
+		}
+
+		.doc-nav-summary {
+			display: block;
+			padding: 0.6rem 0.85rem;
+			color: var(--c-ink);
+			font-size: var(--t-ui);
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.doc-nav-body {
+			padding: 0 0.6rem 0.75rem;
+		}
+	}
+</style>

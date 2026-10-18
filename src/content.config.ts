@@ -20,8 +20,11 @@ const blog = defineCollection({
 			draft: z.boolean().default(false),
 			// 文章版式：
 			//   post（默认）正文 + 右侧大纲
-			//   doc        左侧可展开目录 + 正文 + 右侧大纲
-			layout: z.enum(['post', 'doc']).default('post'),
+			//   doc        左侧文档目录 + 正文 + 右侧大纲
+			// 注意别叫 layout —— 那是 Astro/MDX 的保留字段，会被当成布局组件路径去 import
+			articleLayout: z.enum(['post', 'doc']).default('post'),
+			// 文档集里的排序（小的在前）；同序时按发布时间
+			docOrder: z.number().default(0),
 		}),
 });
 
