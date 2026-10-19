@@ -11,10 +11,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PostCard from '../../components/PostCard.astro';
 import { SITE_TITLE } from '../../consts';
-import { getPosts, groupByTag, type Post } from '../../lib/posts';
+import { getArticles, groupByTag, type Article } from '../../lib/posts';
 
 export async function getStaticPaths() {
-	const posts = await getPosts();
+	const posts = await getArticles();
 	return groupByTag(posts).map(({ name, posts }) => ({
 		params: { tag: name },
 		props: { tag: name, posts },
@@ -23,7 +23,7 @@ export async function getStaticPaths() {
 
 interface Props {
 	tag: string;
-	posts: Post[];
+	posts: Article[];
 }
 
 const { tag, posts } = Astro.props;

@@ -1,70 +1,154 @@
 /**
- * 文章查询的唯一入口。
+ * 内容查询的唯一入口。
+ *
+ * 三种内容：
+ *   - 文章：src/content/blog/<分类>/<文章>.md，blog 集合；
+ *   - 文档：src/content/docs/<书>/<篇>.md，docs 集合；
+ *   - 书：  src/content/books/<书>.md，books 集合，只存书级展示信息。
  *
  * 约定：
- *   - 分类 = 目录。`src/content/blog/CSS/Flex.md` 的 id 是 `CSS/Flex`，分类即 `CSS`。
- *   - 标签 = frontmatter 里的 `tags` 数组。
- *   - `draft: true` 的文章一律不出现在列表、RSS 和页面里。
- *   - `articleLayout: doc` 的是文档文章：统一放在 blog/文档/ 目录下，
- *     因而自成一个「文档」分类。它们在「文章」列表与首页最新里排除，
- *     但分类、标签、时间轴、搜索与 RSS 仍会收录。
- *   - 分类页的「文档」只出一张总入口卡片（读 src/content/docs/overview.md
- *     的标题 / 封面 / 简介），不把每篇文档散成卡片。
+ *   - 文章分类 = 目录；文档所属书 = 文档 id 的第一段。
+ *   - `draft: true` 的内容不出现在列表、RSS、搜索和页面里。
+ *   - 文档的集内顺序由 `order` 决定（小的在前），同序再按发布时间。
+ *   - 文档与文章是两种并列内容，不互相混入。
  *
- * 全站任何地方要取文章都走这里，不要直接调 getCollection，
+ * 全站任何地方要取内容都走这里，不要直接调 getCollection，
  * 否则容易漏掉 draft 过滤或排序。
  */
 import { getCollection, type CollectionEntry } from 'astro:content';
 
-export type Post = CollectionEntry<'blog'>;
-export type DocOverview = CollectionEntry<'docs'>;
+export type Article = CollectionEntry<'blog'>;
+export type Doc = CollectionEntry<'docs'>;
+export type Book = CollectionEntry<'books'>;
 
-/**
- * 文档统一归属的分类（目录名）。
- * 分类页据此识别「文档」分类，并把其中的文档折叠成一张总入口卡片。
- */
-export const DOC_CATEGORY = '文档';
+export type DocBook = {
+	name: string;
+	meta: Book;
+	docs: Doc[];
+};
 
-/** 是否为文档文章（articleLayout: doc） */
-export function isDocPost(post: Post): boolean {
-	return post.data.articleLayout === 'doc';
-}
+export type CategoryGroup = { name: string; posts: Article[]; count: number };
+export type TagGroup = { name: string; posts: Article[]; count: number };
 
-/** 全部已发布文章（含文档文章），按发布时间倒序 */
-export async function getPosts(): Promise<Post[]> {
+/** 全部已发布文章，按发布时间倒序 */
+export async function getArticles(): Promise<Article[]> {
 	const posts = await getCollection('blog', ({ data }) => !data.draft);
 	return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
-/**
- * 普通文章（排除文档文章），按发布时间倒序。
- * 首页最新文章 / 文章列表用这个；文档文章另有文档集与分类页的文档集卡片。
- */
-export async function getArticles(): Promise<Post[]> {
-	const posts = await getPosts();
-	return posts.filter((post) => !isDocPost(post));
+/** 全部已发布文档，按发布时间倒序（搜索索引用；书内顺序走 getDocBooks） */
+export async function getAllDocs(): Promise<Doc[]> {
+	const docs = await getCollection('docs', ({ data }) => !data.draft);
+	return docs.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
-/** 从 id 推导分类：`CSS/Flex` → `CSS`；直接放在 blog/ 下的归入「未分类」 */
-export function getCategory(post: Post): string {
+/** 文档 id 的第一段就是书的名字：`文档/markdown-style-guide` → `文档` */
+export function getDocBookName(doc: Doc): string {
+	const slash = doc.id.indexOf('/');
+	if (slash === -1) {
+		throw new Error(`文档「${doc.id}」必须放在 src/content/docs/<书>/ 下。`);
+	}
+	return doc.id.slice(0, slash);
+}
+
+function groupDocs(docs: Doc[]): Map<string, Doc[]> {
+	const groups = new Map<string, Doc[]>();
+
+	for (const doc of docs) {
+		const name = getDocBookName(doc);
+		if (!groups.has(name)) groups.set(name, []);
+		groups.get(name)!.push(doc);
+	}
+
+	return groups;
+}
+
+/**
+ * 全部文档集：按书分组，并关联 books 集合里的书级元数据。
+ *
+ * 构建期校验：
+ *   - 有文档目录就必须有对应的 books/<书>.md；
+ *   - 有书级元数据就必须有对应的文档目录；
+ *   - 每本书至少有一篇已发布文档，否则不会出现在 /docs/。
+ */
+export async function getDocBooks(): Promise<DocBook[]> {
+	const [allDocs, metas] = await Promise.all([
+		getCollection('docs'),
+		getCollection('books'),
+	]);
+
+	const allGroups = groupDocs(allDocs);
+	const publishedGroups = groupDocs(allDocs.filter((doc) => !doc.data.draft));
+	const metaById = new Map(metas.map((meta) => [meta.id, meta]));
+
+	const missingMeta = [...allGroups.keys()].filter((name) => !metaById.has(name));
+	if (missingMeta.length > 0) {
+		throw new Error(
+			`文档集缺少书级元数据：${missingMeta.join('、')}。` +
+				`请创建 ${missingMeta.map((name) => `src/content/books/${name}.md`).join('、')}。`,
+		);
+	}
+
+	const orphanMeta = metas.filter((meta) => !allGroups.has(meta.id));
+	if (orphanMeta.length > 0) {
+		throw new Error(
+			`书级元数据没有对应的文档目录：${orphanMeta.map((meta) => meta.id).join('、')}。` +
+				`请在 src/content/docs/<书>/ 下添加文档，或删除多余的 books 文件。`,
+		);
+	}
+
+	return [...publishedGroups]
+		.map(([name, docs]) => ({
+			name,
+			meta: metaById.get(name)!,
+			docs: [...docs].sort(
+				(a, b) => a.data.order - b.data.order || a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
+			),
+		}))
+		.sort(
+			(a, b) => a.meta.data.order - b.meta.data.order || a.name.localeCompare(b.name, 'zh'),
+		);
+}
+
+/** 从文章 id 推导分类：`笔记/First` → `笔记`；直接放在 blog/ 下的归入「未分类」 */
+export function getCategory(post: Article): string {
 	const i = post.id.indexOf('/');
 	return i === -1 ? '未分类' : post.id.slice(0, i);
 }
 
 /** 文章链接 */
-export function postHref(post: Post): string {
+export function postHref(post: Article): string {
 	return `/blog/${post.id}/`;
 }
 
-export type CategoryGroup = { name: string; posts: Post[]; count: number };
-export type TagGroup = { name: string; posts: Post[]; count: number };
+/** 文档链接：id 已含书名，直接拼到 /docs/ 下 */
+export function docHref(doc: Doc): string {
+	return `/docs/${doc.id}/`;
+}
 
-function group(posts: Post[], keys: (p: Post) => string[]): { name: string; posts: Post[]; count: number }[] {
-	const map = new Map<string, Post[]>();
-	for (const p of posts) {
-		for (const key of keys(p)) {
+/** 书目录链接 */
+export function bookHref(book: string): string {
+	return `/docs/${book}/`;
+}
+
+/** 书卡链接：直达第一篇文档；空书在数据层就报错 */
+export function docBookHref(book: DocBook): string {
+	const first = book.docs[0];
+	if (!first) {
+		throw new Error(`文档集「${book.name}」没有任何已发布文档，无法生成入口链接。`);
+	}
+	return docHref(first);
+}
+
+function group(
+	posts: Article[],
+	keys: (post: Article) => string[],
+): { name: string; posts: Article[]; count: number }[] {
+	const map = new Map<string, Article[]>();
+	for (const post of posts) {
+		for (const key of keys(post)) {
 			if (!map.has(key)) map.set(key, []);
-			map.get(key)!.push(p);
+			map.get(key)!.push(post);
 		}
 	}
 	return [...map]
@@ -72,27 +156,27 @@ function group(posts: Post[], keys: (p: Post) => string[]): { name: string; post
 		.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh'));
 }
 
-/** 按分类聚合，文章数多的在前 */
-export function groupByCategory(posts: Post[]): CategoryGroup[] {
-	return group(posts, (p) => [getCategory(p)]);
+/** 按分类聚合文章，文章数多的在前 */
+export function groupByCategory(posts: Article[]): CategoryGroup[] {
+	return group(posts, (post) => [getCategory(post)]);
 }
 
-/** 按标签聚合，出现次数多的在前 */
-export function groupByTag(posts: Post[]): TagGroup[] {
-	return group(posts, (p) => p.data.tags);
+/** 按标签聚合文章，出现次数多的在前 */
+export function groupByTag(posts: Article[]): TagGroup[] {
+	return group(posts, (post) => post.data.tags);
 }
 
 /* ---------- 时间轴用的按年月分组 ---------- */
 
-export type MonthGroup = { month: number; posts: Post[] };
+export type MonthGroup = { month: number; posts: Article[] };
 export type YearGroup = { year: string; count: number; months: MonthGroup[] };
 
 /**
  * 按「年 → 月」两级分组，年、月都倒序（新的在前）。
- * posts 需要已经排好序（getPosts() 的输出即可）。
+ * posts 需要已经排好序（getArticles() 的输出即可）。
  */
-export function groupByYearMonth(posts: Post[]): YearGroup[] {
-	const byYear = new Map<string, Map<number, Post[]>>();
+export function groupByYearMonth(posts: Article[]): YearGroup[] {
+	const byYear = new Map<string, Map<number, Article[]>>();
 
 	for (const post of posts) {
 		const d = post.data.pubDate;
@@ -114,82 +198,6 @@ export function groupByYearMonth(posts: Post[]): YearGroup[] {
 				.sort((a, b) => b.month - a.month),
 		}))
 		.sort((a, b) => Number(b.year) - Number(a.year));
-}
-
-/* ---------- 文档集（doc 版式）----------
- * 约定：分类 = 一本书。`articleLayout: doc` 的文章按分类归入各自的文档集，
- * 集内按 `docOrder`（小的在前）排，同序再按发布时间。
- * 目前所有文档都在 blog/文档/ 下，所以只有一本；分组逻辑保留，
- * 以后若再开一本 doc 目录也能直接工作。
- * 文档集的总入口是 /docs/<分类>/，左侧目录只列当前这一本。
- */
-export type DocBook = { name: string; posts: Post[] };
-
-/** 文档总入口的展示信息：/docs/ 与分类页的「文档」卡片共用 */
-export async function getDocsOverview(): Promise<DocOverview> {
-	const entries = await getCollection('docs');
-	if (entries.length === 0) {
-		throw new Error('缺少文档总入口元数据：请创建 src/content/docs/overview.md');
-	}
-	if (entries.length > 1) {
-		throw new Error(
-			`文档总入口元数据只能有一条，当前有 ${entries.length} 条：${entries
-				.map((entry) => entry.id)
-				.join('、')}。请只保留 src/content/docs/overview.md。`,
-		);
-	}
-	return entries[0];
-}
-
-export function getDocBooks(posts: Post[]): DocBook[] {
-	const map = new Map<string, Post[]>();
-
-	for (const post of posts) {
-		if (!isDocPost(post)) continue;
-		const name = getCategory(post);
-		if (!map.has(name)) map.set(name, []);
-		map.get(name)!.push(post);
-	}
-
-	const books = [...map]
-		.map(([name, list]) => ({
-			name,
-			posts: [...list].sort(
-				(a, b) =>
-					a.data.docOrder - b.data.docOrder || a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
-			),
-		}))
-		.sort((a, b) => b.posts.length - a.posts.length || a.name.localeCompare(b.name, 'zh'));
-
-	// 当前内容模型只支持一个文档集；多出来的书没有入口，早点报错好过静默漏掉。
-	if (books.length > 1) {
-		throw new Error(
-			`当前只支持一个文档集，但发现 ${books.length} 个：${books
-				.map((book) => book.name)
-				.join('、')}。请把所有 articleLayout: doc 的文章放到 ${DOC_CATEGORY}/ 下。`,
-		);
-	}
-	if (books[0] && books[0].name !== DOC_CATEGORY) {
-		throw new Error(
-			`文档必须放在 src/content/blog/${DOC_CATEGORY}/ 下，当前文档集是「${books[0].name}」。`,
-		);
-	}
-
-	return books;
-}
-
-/** 文档集总入口路径 */
-export function bookHref(book: string): string {
-	return `/docs/${book}/`;
-}
-
-/** 文档集卡片的链接：直达第一篇文档，左侧目录会以第一篇为当前项 */
-export function docBookHref(book: DocBook): string {
-	const first = book.posts[0];
-	if (!first) {
-		throw new Error(`文档集「${book.name}」没有任何文档，无法生成入口链接。`);
-	}
-	return postHref(first);
 }
 
 /** 时间轴左侧的月份名 */

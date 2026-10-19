@@ -16,7 +16,7 @@
 	<button
 		class="search-trigger"
 		type="button"
-		aria-label="搜索文章"
+		aria-label="搜索文章与文档"
 		aria-expanded="false"
 		data-search-trigger
 	>
@@ -45,8 +45,8 @@
 			<input
 				class="search-input"
 				type="search"
-				placeholder="搜索文章…"
-				aria-label="搜索文章"
+				placeholder="搜索文章与文档…"
+				aria-label="搜索文章与文档"
 				autocomplete="off"
 				data-search-input
 			/>
@@ -184,6 +184,24 @@
 		margin-top: 0.15rem;
 		font-size: var(--t-meta);
 		color: var(--c-quiet);
+	}
+
+	.search-result-kind {
+		display: inline-block;
+		margin-right: 0.4rem;
+		padding: 0 0.35rem;
+		border: 1px solid var(--c-line);
+		border-radius: 999px;
+		color: var(--c-quiet);
+		font-size: var(--t-meta);
+		line-height: 1.5;
+		white-space: nowrap;
+	}
+
+	.search-result-kind.is-doc {
+		border-color: var(--c-accent-line);
+		background: var(--c-accent-soft);
+		color: var(--c-accent);
 	}
 
 	.search-empty {

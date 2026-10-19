@@ -7,8 +7,8 @@
  * 导航高亮沿用 newechoes 的「居中短下划线」形式，但用强调色而非纯黑。
  *
  * 导航文案目前是中文（首页 / 文章 / 分类 / 文档 / 时间轴 / 关于）。
- * 常规页面由 HeaderLink 按 pathname 判断高亮；文档阅读页由 BlogPost 传入
- * activeHref="/docs" 强制高亮「文档」——它的 URL 仍然在 /blog/ 下。
+ * 高亮统一由 HeaderLink 按 pathname 首段判断：/docs/... 高亮「文档」，
+ * /blog/... 高亮「文章」，不再需要页面传 activeHref 特例。
  * 站点名 SITE_TITLE 仍是 consts.ts 里的英文占位，属内容决策，未动。
  */
 import HeaderLink from './HeaderLink.astro';
@@ -16,17 +16,6 @@ import ThemeToggle from './ThemeToggle.astro';
 import Search from './Search.astro';
 import { SITE_TITLE } from '../consts';
 import AvatarImage from '../assets/avatar.svg';
-
-interface Props {
-	/**
-	 * 显式指定要高亮的导航项（传 href），不传则各链接按 pathname 自动判断。
-	 * 文档阅读页在 /blog/文档/ 下，路径会被「文章」抢走，所以由 BlogPost 传 '/docs'。
-	 */
-	activeHref?: string;
-}
-
-const { activeHref } = Astro.props;
-const activeFor = (href: string) => (activeHref ? href === activeHref : undefined);
 ---
 
 <header class="site-header">
@@ -41,12 +30,12 @@ const activeFor = (href: string) => (activeHref ? href === activeHref : undefine
 		<Search />
 
 		<nav class="site-nav" aria-label="主导航">
-			<HeaderLink href="/" active={activeFor('/')}>首页</HeaderLink>
-			<HeaderLink href="/blog" active={activeFor('/blog')}>文章</HeaderLink>
-			<HeaderLink href="/categories" active={activeFor('/categories')}>分类</HeaderLink>
-			<HeaderLink href="/docs" active={activeFor('/docs')}>文档</HeaderLink>
-			<HeaderLink href="/timeline" active={activeFor('/timeline')}>时间轴</HeaderLink>
-			<HeaderLink href="/about" active={activeFor('/about')}>关于</HeaderLink>
+			<HeaderLink href="/">首页</HeaderLink>
+			<HeaderLink href="/blog">文章</HeaderLink>
+			<HeaderLink href="/categories">分类</HeaderLink>
+			<HeaderLink href="/docs">文档</HeaderLink>
+			<HeaderLink href="/timeline">时间轴</HeaderLink>
+			<HeaderLink href="/about">关于</HeaderLink>
 		</nav>
 
 		<div class="header-actions">

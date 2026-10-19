@@ -3,19 +3,16 @@
  * 单个分类的文章列表。
  * 分类由目录推导，见 src/lib/posts.ts 的 getCategory()。
  *
- * 文档文章不逐篇散开：所有文档都在「文档」分类下，只出一张总入口卡片，
- * 标题 / 封面 / 简介来自 src/content/docs/overview.md，点击直达第一篇文档。
+ * 文档是并列内容，不属于文章分类；文档入口在 /docs/ 与分类总览的文档块。
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PostCard from '../../components/PostCard.astro';
-import DocOverviewCard from '../../components/DocOverviewCard.astro';
 import { SITE_TITLE } from '../../consts';
-import { getCategoryDetailView } from '../../lib/category-view';
-import { getPosts, groupByCategory, type Post } from '../../lib/posts';
+import { getArticles, groupByCategory, type Article } from '../../lib/posts';
 
 export async function getStaticPaths() {
-	const posts = await getPosts();
+	const posts = await getArticles();
 	return groupByCategory(posts).map(({ name, posts }) => ({
 		params: { category: name },
 		props: { category: name, posts },
@@ -24,46 +21,29 @@ export async function getStaticPaths() {
 
 interface Props {
 	category: string;
-	posts: Post[];
+	posts: Article[];
 }
 
 const { category, posts } = Astro.props;
-const { total, docCount, articles, docEntry } = await getCategoryDetailView(category, posts);
-
-const meta =
-	docCount === total
-		? `共 ${total} 篇文档`
-		: docCount > 0
-			? `共 ${total} 篇 · 其中 ${docCount} 篇文档`
-			: `共 ${total} 篇`;
 ---
 
 <BaseLayout
 	title={`分类：${category} | ${SITE_TITLE}`}
-	description={`${SITE_TITLE} 中「${category}」分类下的全部文章，共 ${total} 篇。`}
+	description={`${SITE_TITLE} 中「${category}」分类下的全部文章，共 ${posts.length} 篇。`}
 >
 	<main>
 		<PageHeader
 			title={category}
-			meta={meta}
+			meta={`共 ${posts.length} 篇文章`}
 			backHref="/categories"
 			backText="全部分类"
 		/>
 		<ul class="post-grid">
-			{
-				docEntry && (
-					<li>
-						<DocOverviewCard overview={docEntry.overview} book={docEntry.book} />
-					</li>
-				)
-			}
-			{
-				articles.map((post) => (
-					<li>
-						<PostCard post={post} />
-					</li>
-				))
-			}
+			{posts.map((post) => (
+				<li>
+					<PostCard post={post} />
+				</li>
+			))}
 		</ul>
 	</main>
 </BaseLayout>

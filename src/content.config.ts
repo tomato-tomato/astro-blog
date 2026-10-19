@@ -2,9 +2,9 @@ import { glob } from "astro/loaders";
 import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
 
+// 普通文章：分类 = 目录，src/content/blog/<分类>/<文章>.md
+// 文档不在这个集合里，见下面的 docs。
 const blog = defineCollection({
-	// 分类 = 目录：src/content/blog/<分类>/<文章>.md
-	// 文章的分类由 src/lib/posts.ts 的 getCategory() 从 id 的首段推导。
 	loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
 	schema: ({ image }) =>
 		z.object({
@@ -18,27 +18,36 @@ const blog = defineCollection({
 			tags: z.array(z.string()).default([]),
 			// 草稿：true 的文章不进列表、不进 RSS、不生成页面
 			draft: z.boolean().default(false),
-			// 文章版式：
-			//   post（默认）正文 + 右侧大纲
-			//   doc        左侧文档目录 + 正文 + 右侧大纲
-			// 注意别叫 layout —— 那是 Astro/MDX 的保留字段，会被当成布局组件路径去 import
-			articleLayout: z.enum(['post', 'doc']).default('post'),
-			// 文档集里的排序（小的在前）；同序时按发布时间
-			docOrder: z.number().default(0),
 		}),
 });
 
-// 文档总入口的元数据（标题 / 封面 / 简介）。
-// 与具体的文档文章分开：分类页的「文档」卡片和 /docs/ 都读这一份，
-// 这样卡片展示的是文档集自己的介绍，而不是借第一篇文档的。
+// 文档正文：src/content/docs/<书>/<篇>.md
+// 书的标识 = id 的第一段；集内顺序由 order 决定（小的在前）。
 const docs = defineCollection({
 	loader: glob({ base: "./src/content/docs", pattern: "**/*.{md,mdx}" }),
 	schema: ({ image }) =>
 		z.object({
 			title: z.string(),
 			description: z.string(),
+			pubDate: z.coerce.date(),
+			updatedDate: z.coerce.date().optional(),
 			heroImage: image().optional(),
+			order: z.number().default(0),
+			draft: z.boolean().default(false),
 		}),
 });
 
-export const collections = { blog, docs };
+// 书级元数据：src/content/books/<书>.md
+// 只用于 /docs/ 的书卡与书目录页，和具体文档正文分开。
+const books = defineCollection({
+	loader: glob({ base: "./src/content/books", pattern: "**/*.{md,mdx}" }),
+	schema: ({ image }) =>
+		z.object({
+			title: z.string(),
+			description: z.string(),
+			heroImage: image().optional(),
+			order: z.number().default(0),
+		}),
+});
+
+export const collections = { blog, docs, books };

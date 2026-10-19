@@ -2,40 +2,44 @@
 /*
  * 全部文档集：/docs/
  *
- * 每本「书」= 一个分类下的 doc 版式文章。
- * 卡片展示总入口的封面与简介（src/content/docs/overview.md），
- * 再列前 4 篇文档的简介，整卡直接进入第一篇；
- * 完整目录仍在 /docs/<分类>/，从文档页左栏的「总览」进入。
+ * 每本书 = src/content/docs/<书>/ + src/content/books/<书>.md。
+ * 卡片展示书级元数据，再列前 4 篇文档的简介，整卡直接进入第一篇；
+ * 完整目录在 /docs/<书>/，从文档页左栏的「总览」进入。
  */
 import { Image } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { DOC_CATEGORY, docBookHref, getDocBooks, getDocsOverview, getPosts } from '../../lib/posts';
+import { docBookHref, getDocBooks } from '../../lib/posts';
 
-const books = getDocBooks(await getPosts());
-const overview = books.length > 0 ? await getDocsOverview() : undefined;
-const total = books.reduce((n, book) => n + book.posts.length, 0);
-const { title, description, heroImage } = overview?.data ?? {};
+const books = await getDocBooks();
+const total = books.reduce((n, book) => n + book.docs.length, 0);
+
+// 只有一本书时，总入口直接沿用这本书的标题 / 简介；
+// 多本书时用中性的「文档」作为页面标题。
+const pageTitle = books.length === 1 ? books[0].meta.data.title : '文档';
+const pageDescription = books.length === 1 ? books[0].meta.data.description : SITE_DESCRIPTION;
 ---
 
-<BaseLayout
-	title={`${title ?? DOC_CATEGORY} | ${SITE_TITLE}`}
-	description={description ?? SITE_DESCRIPTION}
->
+<BaseLayout title={`${pageTitle} | ${SITE_TITLE}`} description={pageDescription}>
 	<main>
-			<PageHeader title={title ?? DOC_CATEGORY} meta={`共 ${total} 篇文档`} />
+		<PageHeader
+			title={pageTitle}
+			meta={`${books.length} 本书 · 共 ${total} 篇文档`}
+		/>
 
-			{
-				books.length > 0 ? (
-					<ul class="book-grid">
-						{books.map((book) => (
+		{
+			books.length > 0 ? (
+				<ul class="book-grid">
+					{books.map((book) => {
+						const { title, description, heroImage } = book.meta.data;
+						return (
 							<li>
 								{/* 整卡直达第一篇文档，省掉中间的文章清单页 */}
 								<a
 									class="book-card"
 									href={docBookHref(book)}
-									aria-label={`${title ?? book.name} 文档集，共 ${book.posts.length} 篇，从第一篇开始阅读`}
+									aria-label={`${title} 文档集，共 ${book.docs.length} 篇，从第一篇开始阅读`}
 								>
 									{heroImage && (
 										<div class="book-card-media">
@@ -44,8 +48,8 @@ const { title, description, heroImage } = overview?.data ?? {};
 									)}
 									<div class="book-card-body">
 										<div class="book-card-head">
-											<h2 class="book-card-title">{title ?? book.name}</h2>
-											<span class="book-card-count">{book.posts.length} 篇</span>
+											<h2 class="book-card-title">{title}</h2>
+											<span class="book-card-count">{book.docs.length} 篇</span>
 										</div>
 										{description && (
 											<p class="book-card-desc" title={description}>
@@ -53,21 +57,25 @@ const { title, description, heroImage } = overview?.data ?? {};
 											</p>
 										)}
 										<ul class="book-card-summaries">
-											{book.posts.slice(0, 4).map((post) => (
-												<li class="book-card-summary" title={post.data.description}>
-													{post.data.description}
+											{book.docs.slice(0, 4).map((doc) => (
+												<li class="book-card-summary" title={doc.data.description}>
+													{doc.data.description}
 												</li>
 											))}
 										</ul>
 									</div>
 								</a>
 							</li>
-						))}
-					</ul>
-				) : (
-					<p>还没有文档集。给文章加上 <code>articleLayout: doc</code> 就会出现。</p>
-				)
-			}
+						);
+					})}
+				</ul>
+			) : (
+				<p>
+					还没有文档集。在 <code>src/content/docs/&lt;书&gt;/</code> 添加文档，并在
+					<code>src/content/books/&lt;书&gt;.md</code> 添加书级元数据即可。
+				</p>
+			)
+		}
 	</main>
 </BaseLayout>
 

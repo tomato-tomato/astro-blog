@@ -1,0 +1,31 @@
+---
+import { render } from 'astro:content';
+import DocPage from '../../../layouts/DocPage.astro';
+import { getDocBooks, type Doc, type DocBook } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+	const books = await getDocBooks();
+
+	return books.flatMap((book) =>
+		book.docs.map((doc) => ({
+			params: {
+				book: book.name,
+				slug: doc.id.slice(book.name.length + 1),
+			},
+			props: { book, doc },
+		})),
+	);
+}
+
+interface Props {
+	book: DocBook;
+	doc: Doc;
+}
+
+const { book, doc } = Astro.props;
+const { Content, headings } = await render(doc);
+---
+
+<DocPage book={book} doc={doc} headings={headings}>
+	<Content />
+</DocPage>

@@ -19,6 +19,10 @@ export function initHomeParticles(): void {
 
 	if (!el || !baked) return;
 
+	// 尊重系统设置：减少动效时完全不启动粒子，静态背景仍然可用
+	const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+	if (reduceMotion.matches) return;
+
 	const currentTheme = () =>
 		document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 
@@ -31,19 +35,64 @@ export function initHomeParticles(): void {
 	};
 
 	let container: Awaited<ReturnType<typeof tsParticles.load>> = undefined;
+	let renderSeq = 0;
 
 	const render = async (theme: string) => {
+		const seq = ++renderSeq;
 		container?.destroy();
-		container = await tsParticles.load({
+		container = undefined;
+
+		const next = await tsParticles.load({
 			id: 'hero-particles',
 			element: el,
 			options: buildOptions(theme),
 		});
+
+		// 主题切换很快时，旧的一次 load 可能晚于新的一次返回，丢弃即可
+		if (seq !== renderSeq) {
+			next?.destroy();
+			return;
+		}
+
+		container = next;
+		if (document.hidden) container?.pause();
 	};
 
 	// 插件注册完成后才能 load；注册和 load 用的是同一个引擎实例
 	loadSlim(tsParticles)
-		.then(() => render(currentTheme()))
+		.then(() => {
+			void render(currentTheme());
+
+			// 主题切换时重新着色。View Transition 期间 data-theme 只变一次，
+			// 防抖是为了避免与过渡动画抢帧。
+			let themeTimer = 0;
+			const observer = new MutationObserver(() => {
+				window.clearTimeout(themeTimer);
+				themeTimer = window.setTimeout(() => void render(currentTheme()), 120);
+			});
+			observer.observe(document.documentElement, {
+				attributes: true,
+				attributeFilter: ['data-theme'],
+			});
+
+			// 标签页不可见时暂停绘制，回来再继续
+			document.addEventListener('visibilitychange', () => {
+				if (!container) return;
+				if (document.hidden) container.pause();
+				else container.play();
+			});
+
+			// 用户在系统层面切换「减少动效」时，实时生效
+			reduceMotion.addEventListener('change', (event) => {
+				if (event.matches) {
+					renderSeq += 1;
+					container?.destroy();
+					container = undefined;
+				} else {
+					void render(currentTheme());
+				}
+			});
+		})
 		.catch((error) => {
 			console.error('[particles] 初始化失败', error);
 		});

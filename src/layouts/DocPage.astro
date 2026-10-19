@@ -1,0 +1,96 @@
+---
+/*
+ * 文档阅读页布局：左侧书目录 + 正文 + 右侧大纲。
+ *
+ * 左侧目录是独立的 DocSidebar 组件（后续优化只改那里）；
+ * 正文与普通文章共用 ArticleBody，避免两套 typography。
+ *
+ * data-layout="doc" 是客户端原地换页的识别标记，不能删。
+ */
+import type { Heading } from '../lib/toc';
+import { buildToc } from '../lib/toc';
+import { bookHref, type Doc, type DocBook } from '../lib/posts';
+import BaseLayout from './BaseLayout.astro';
+import ArticleBody from '../components/ArticleBody.astro';
+import ArticleOutline from '../components/ArticleOutline.astro';
+import DocSidebar from '../components/DocSidebar.astro';
+
+interface Props {
+	book: DocBook;
+	doc: Doc;
+	headings?: Heading[];
+}
+
+const { book, doc, headings = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage } = doc.data;
+
+const toc = buildToc(headings);
+const hasToc = toc.length > 0;
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	image={heroImage}
+	type="article"
+	publishedTime={pubDate}
+	modifiedTime={updatedDate ?? pubDate}
+>
+	<main class="article-shell" data-layout="doc" data-has-toc={hasToc}>
+		<DocSidebar
+			bookName={book.name}
+			pages={book.docs}
+			currentId={doc.id}
+			homeHref={bookHref(book.name)}
+		/>
+
+		<ArticleBody
+			title={title}
+			pubDate={pubDate}
+			updatedDate={updatedDate}
+			heroImage={heroImage}
+		>
+			<slot />
+		</ArticleBody>
+
+		{hasToc && <ArticleOutline nodes={toc} />}
+	</main>
+</BaseLayout>
+
+<style>
+	main.article-shell {
+		display: grid;
+		grid-template-columns: 13rem minmax(0, 1fr) 11rem;
+		gap: 2rem;
+		align-items: start;
+	}
+
+	main.article-shell[data-has-toc='false'] {
+		grid-template-columns: 13rem minmax(0, 1fr);
+	}
+
+	/* 中等宽度：先让右侧大纲退场，正文别被挤成窄条 */
+	@media (max-width: 1180px) {
+		main.article-shell {
+			grid-template-columns: 13rem minmax(0, 1fr);
+		}
+
+		main.article-shell :global(.outline) {
+			display: none;
+		}
+	}
+
+	/* 窄屏：全部单列，目录折叠块排到正文前 */
+	@media (max-width: 900px) {
+		main.article-shell,
+		main.article-shell[data-has-toc='false'] {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 1.5rem;
+		}
+
+		main.article-shell :global(.outline),
+		main.article-shell :global(.doc-nav) {
+			order: -1;
+		}
+	}
+</style>

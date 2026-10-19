@@ -5,10 +5,10 @@
  * 只是把 Post 映射到 ContentCard 的中性字段，外观与交互全在 ContentCard 里。
  */
 import ContentCard from './ContentCard.astro';
-import { getCategory, postHref, type Post } from '../lib/posts';
+import { getCategory, postHref, type Article } from '../lib/posts';
 
 interface Props {
-	post: Post;
+	post: Article;
 	/** 不显示封面图 */
 	hideImage?: boolean;
 	/** 不显示摘要 */

@@ -1,16 +1,20 @@
 ---
 /*
- * 文档版式的左侧目录 —— 列的是**当前文档集里的文章**，不是当前文章的小标题。
+ * 文档版式的左侧目录 —— 独立组件，列的是**当前这本书里的文档**，
+ * 不是当前文章的小标题。
  *
- * 一本书 = 一个分类下的 doc 文章，顺序由 docOrder 决定；
- * 顶部有「总览」链接回到 /docs/<分类>/（那才是总入口）。
+ * 一本书 = src/content/docs/<书>/ 下的全部文档，顺序由每篇的 order 决定；
+ * 顶部有「总览」链接回到 /docs/<书>/（书目录页）。
  * 整块是 <details>，窄屏折叠、桌面端常开。
+ *
+ * 后续对左侧目录的交互 / 信息层级优化都应该落在这个组件里，
+ * 不要把它重新写回 DocPage。
  */
-import { postHref, type Post } from '../lib/posts';
+import { docHref, type Doc } from '../lib/posts';
 
 interface Props {
 	bookName: string;
-	pages: Post[];
+	pages: Doc[];
 	currentId: string;
 	homeHref: string;
 }
@@ -20,22 +24,22 @@ const { bookName, pages, currentId, homeHref } = Astro.props;
 
 {
 	pages.length > 0 && (
-		<details class="doc-nav" open data-book={bookName}>
+		<details class="doc-nav doc-sidebar" open data-book={bookName} data-doc-sidebar>
 			<summary class="doc-nav-summary">{bookName} · 目录</summary>
 			<nav class="doc-nav-body" aria-label={`${bookName} 文档目录`}>
 				<a class="doc-nav-home" href={homeHref}>
 					<span aria-hidden="true">←</span> {bookName} · 总览
 				</a>
 				<ol class="doc-list">
-					{pages.map((post, i) => (
+					{pages.map((doc, i) => (
 						<li>
 							<a
-								href={postHref(post)}
-								title={post.data.title}
-								aria-current={post.id === currentId ? 'page' : undefined}
+								href={docHref(doc)}
+								title={doc.data.title}
+								aria-current={doc.id === currentId ? 'page' : undefined}
 							>
 								<span class="doc-no">{String(i + 1).padStart(2, '0')}</span>
-								<span class="doc-title">{post.data.title}</span>
+								<span class="doc-title">{doc.data.title}</span>
 							</a>
 						</li>
 					))}

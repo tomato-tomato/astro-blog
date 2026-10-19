@@ -15,14 +15,14 @@ import PageHeader from '../components/PageHeader.astro';
 import TagList from '../components/TagList.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import {
-	getPosts,
+	getArticles,
 	groupByTag,
 	groupByYearMonth,
 	postHref,
 	MONTH_NAMES,
 } from '../lib/posts';
 
-const posts = await getPosts();
+const posts = await getArticles();
 const years = groupByYearMonth(posts);
 const tags = groupByTag(posts);
 

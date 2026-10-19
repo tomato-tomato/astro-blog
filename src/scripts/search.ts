@@ -1,18 +1,11 @@
 /**
  * 页头搜索。
  *
- * 数据来自构建期生成的 /search.json（见 src/pages/search.json.js），
+ * 数据来自构建期生成的 /search.json（见 src/pages/search.json.ts），
  * 第一次聚焦 / 展开搜索时才 fetch，不占首屏。
  * 两种形态（宽屏常驻输入框、窄屏展开面板）共用这套逻辑。
  */
-interface SearchItem {
-	title: string;
-	description: string;
-	category: string;
-	tags: string[];
-	date: string;
-	url: string;
-}
+import type { SearchEntry } from '../lib/search-types';
 
 export function initSearch(): void {
 	const root = document.querySelector<HTMLElement>('[data-search]');
@@ -22,17 +15,17 @@ export function initSearch(): void {
 	const input = root.querySelector<HTMLInputElement>('[data-search-input]');
 	const list = root.querySelector<HTMLUListElement>('[data-search-results]');
 
-	let items: SearchItem[] | null = null;
-	let pending: Promise<SearchItem[]> | null = null;
+	let items: SearchEntry[] | null = null;
+	let pending: Promise<SearchEntry[]> | null = null;
 	let active = -1;
-	let current: SearchItem[] = [];
+	let current: SearchEntry[] = [];
 
-	const load = (): Promise<SearchItem[]> => {
+	const load = (): Promise<SearchEntry[]> => {
 		if (items) return Promise.resolve(items);
 		if (!pending) {
 			pending = fetch(`${import.meta.env.BASE_URL}search.json`)
 				.then((r) => (r.ok ? r.json() : []))
-				.then((data: SearchItem[]) => {
+				.then((data: SearchEntry[]) => {
 					items = data;
 					return data;
 				})
@@ -44,17 +37,17 @@ export function initSearch(): void {
 		return pending;
 	};
 
-	const score = (item: SearchItem, terms: string[]): number => {
+	const score = (item: SearchEntry, terms: string[]): number => {
 		const title = item.title.toLowerCase();
 		const tags = item.tags.join(' ').toLowerCase();
-		const category = item.category.toLowerCase();
+		const context = [item.category, item.book].filter(Boolean).join(' ').toLowerCase();
 		const description = item.description.toLowerCase();
 
 		let total = 0;
 		for (const term of terms) {
 			let hit = 0;
 			if (title.includes(term)) hit += 3;
-			if (tags.includes(term) || category.includes(term)) hit += 2;
+			if (tags.includes(term) || context.includes(term)) hit += 2;
 			if (description.includes(term)) hit += 1;
 			if (hit === 0) return 0; // 有一个词没命中就整体不匹配
 			total += hit;
@@ -73,7 +66,7 @@ export function initSearch(): void {
 		current = [];
 	};
 
-	const render = (results: SearchItem[], query: string) => {
+	const render = (results: SearchEntry[], query: string) => {
 		if (!list) return;
 		list.innerHTML = '';
 		active = -1;
@@ -87,7 +80,7 @@ export function initSearch(): void {
 		if (results.length === 0) {
 			const li = document.createElement('li');
 			li.className = 'search-empty';
-			li.textContent = '没有找到相关文章';
+			li.textContent = '没有找到相关内容';
 			list.appendChild(li);
 			list.hidden = false;
 			return;
@@ -104,7 +97,19 @@ export function initSearch(): void {
 
 			const meta = document.createElement('span');
 			meta.className = 'search-result-meta';
-			meta.textContent = [item.category, item.date].filter(Boolean).join(' · ');
+
+			const kind = document.createElement('span');
+			kind.className = `search-result-kind is-${item.kind}`;
+			kind.textContent = item.kind === 'doc' ? '文档' : '文章';
+
+			// 文档默认只显示类型与日期；有另一本书时补上书名，避免只看到「文档」
+			const bookLabel =
+				item.kind === 'doc' && item.book && item.book !== '文档' ? item.book : undefined;
+			const detail = [item.kind === 'doc' ? bookLabel : item.category, item.date]
+				.filter(Boolean)
+				.join(' · ');
+			meta.append(kind);
+			if (detail) meta.append(document.createTextNode(` ${detail}`));
 
 			a.append(title, meta);
 			li.appendChild(a);

@@ -12,6 +12,66 @@ export interface DocReaderOptions {
 	onSwap?: () => void;
 }
 
+/** 把当前页的某个 meta 更新为目标文档里的值 */
+function syncMeta(selector: string, content: string | null | undefined): void {
+	if (content == null) return;
+	document.querySelector(selector)?.setAttribute('content', content);
+}
+
+/**
+ * 原地换页后同步页面级元信息。
+ *
+ * 目标页是构建好的静态 HTML，所以直接以它为准；URL 类的字段用点击目标的
+ * 绝对地址兜底，不在这里拼接任何路由规则。这样文档 URL 以后从 /blog/ 搬到
+ * /docs/ 时，这段逻辑不需要改。
+ */
+function syncPageMeta(next: Document, href: string): void {
+	const targetUrl = new URL(href, location.href);
+	const attr = (selector: string, name = 'content') =>
+		next.querySelector(selector)?.getAttribute(name) ?? undefined;
+
+	const nextTitle =
+		attr('meta[property="og:title"]') ??
+		attr('meta[property="twitter:title"]') ??
+		next.title;
+	const nextDescription =
+		attr('meta[name="description"]') ??
+		attr('meta[property="og:description"]') ??
+		attr('meta[property="twitter:description"]') ??
+		'';
+	const nextImage =
+		attr('meta[property="og:image"]') ?? attr('meta[property="twitter:image"]');
+	const nextType = attr('meta[property="og:type"]');
+	const nextUrl =
+		attr('meta[property="og:url"]') ??
+		attr('meta[property="twitter:url"]') ??
+		targetUrl.href;
+
+	document.title = next.title;
+	syncMeta('meta[name="title"]', nextTitle);
+	syncMeta('meta[name="description"]', nextDescription);
+	syncMeta('meta[property="og:type"]', nextType);
+	syncMeta('meta[property="og:url"]', nextUrl);
+	syncMeta('meta[property="og:title"]', nextTitle);
+	syncMeta('meta[property="og:description"]', nextDescription);
+	syncMeta('meta[property="og:image"]', nextImage);
+	syncMeta('meta[property="twitter:url"]', nextUrl);
+	syncMeta('meta[property="twitter:title"]', nextTitle);
+	syncMeta('meta[property="twitter:description"]', nextDescription);
+	syncMeta('meta[property="twitter:image"]', nextImage);
+	syncMeta(
+		'meta[property="article:published_time"]',
+		attr('meta[property="article:published_time"]'),
+	);
+	syncMeta(
+		'meta[property="article:modified_time"]',
+		attr('meta[property="article:modified_time"]'),
+	);
+
+	const canonical = attr('link[rel="canonical"]', 'href') ?? targetUrl.href;
+	document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonical);
+}
+
 export function initDocReader(options: DocReaderOptions = {}): void {
 	const shell = document.querySelector<HTMLElement>('main.article-shell[data-layout="doc"]');
 	if (!shell) return;
@@ -74,10 +134,7 @@ export function initDocReader(options: DocReaderOptions = {}): void {
 			shell.dataset.hasToc = nextShell.dataset.hasToc ?? 'false';
 			setCurrent(new URL(href, location.href).pathname);
 
-			document.title = next.title;
-			const nextDesc = next.querySelector('meta[name="description"]');
-			const curDesc = document.querySelector('meta[name="description"]');
-			if (nextDesc && curDesc) curDesc.setAttribute('content', nextDesc.getAttribute('content') ?? '');
+			syncPageMeta(next, href);
 
 			if (push) history.pushState({ doc: true }, '', href);
 

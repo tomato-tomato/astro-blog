@@ -3,6 +3,16 @@ dist/
 # generated types
 .astro/
 
+# Qoder
+.qoder/
+
+# Cloudflare local dev state
+.wrangler/
+
+# Playwright
+test-results/
+playwright-report/
+
 # dependencies
 node_modules/
 

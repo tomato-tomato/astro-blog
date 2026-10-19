@@ -5,9 +5,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getPosts, groupByTag } from '../../lib/posts';
+import { getArticles, groupByTag } from '../../lib/posts';
 
-const posts = await getPosts();
+const posts = await getArticles();
 const tags = groupByTag(posts);
 
 const counts = tags.map((t) => t.count);

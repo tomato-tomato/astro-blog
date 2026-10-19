@@ -5,9 +5,10 @@
 	"packageManager": "pnpm@10.11.1",
 	"scripts": {
 		"dev": "astro dev",
-		"build": "astro build",
+		"build": "astro build && node scripts/generate-redirects.mjs",
 		"preview": "astro preview",
 		"check": "astro check",
+		"test:e2e": "playwright test",
 		"astro": "astro"
 	},
 	"dependencies": {
@@ -27,6 +28,8 @@
 	},
 	"devDependencies": {
 		"@astrojs/check": "^0.9.10",
+		"@playwright/test": "^1.64.1",
+		"@types/node": "^26.6.5",
 		"typescript": "^6.0.3"
 	}
 }
