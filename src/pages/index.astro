@@ -19,7 +19,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
 import type { ISourceOptions } from '@tsparticles/engine';
-import { SITE_TITLE, SITE_DESCRIPTION, HOME_LATEST_COUNT } from '../consts';
+import { SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, HOME_LATEST_COUNT } from '../consts';
 import { getArticles } from '../lib/posts';
 import HeroImage from '../assets/hero.svg';
 
@@ -83,7 +83,7 @@ const particleOptions: ISourceOptions = {
 				</div>
 
 				<div class="home-hero-inner">
-					<h1 class="home-title">{SITE_TITLE}</h1>
+					<h1 class="home-title">{SITE_NAME}</h1>
 					<p class="home-tagline">{SITE_DESCRIPTION}</p>
 					<div class="home-illustration">
 						<img

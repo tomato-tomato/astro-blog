@@ -9,6 +9,7 @@
  * 不进界面。改名字只改这两行，不用去翻组件。
  */
 export const SITE_TITLE = "自留地";
+export const SITE_NAME = "自留地";
 export const SITE_DESCRIPTION = "前端出身，把服务端和 AI 一点点弄明白。";
 
 /**
