@@ -9,7 +9,7 @@ import { getArticles } from '../../lib/posts';
 const posts = await getArticles();
 ---
 
-<BaseLayout title={`全部文章 | ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+<BaseLayout title={`全部文章 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} backdrop="articleList">
 	<main>
 		<PageHeader title="全部文章" meta={`共 ${posts.length} 篇`} />
 		{

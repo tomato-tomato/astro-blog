@@ -19,6 +19,11 @@ export function initPage(): void {
 		void import('./category-filter').then(({ initCategoryFilter }) => initCategoryFilter());
 	}
 
+	// 分类总览 / 文档总入口：网格背景跟随指针
+	if (document.querySelector('[data-backdrop-interactive]')) {
+		void import('./backdrop').then(({ initBackdropInteraction }) => initBackdropInteraction());
+	}
+
 	// 首页 hero
 	if (document.getElementById('hero-particles')) {
 		void import('./home-particles').then(({ initHomeParticles }) => initHomeParticles());

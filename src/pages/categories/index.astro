@@ -21,7 +21,7 @@ const books = await getDocBooks();
 const total = articles.length;
 ---
 
-<BaseLayout title={`分类 | ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+<BaseLayout title={`分类 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} backdrop="categoryIndex">
 	<main>
 		<PageHeader title="分类" meta={`共 ${categories.length} 个分类 · ${total} 篇文章`} />
 

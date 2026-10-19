@@ -30,6 +30,7 @@ const { category, posts } = Astro.props;
 <BaseLayout
 	title={`分类：${category} | ${SITE_TITLE}`}
 	description={`${SITE_TITLE} 中「${category}」分类下的全部文章，共 ${posts.length} 篇。`}
+	backdrop="categoryDetail"
 >
 	<main>
 		<PageHeader

@@ -1,0 +1,34 @@
+---
+/*
+ * 页面背景层。
+ *
+ * 只负责生成结构，具体效果与主题适配在 src/styles/backdrops.css。
+ * 背景层挂在 body 下、z-index: -1，body 的 isolation 保证它位于内容之后；
+ * pointer-events: none，不会挡住卡片、目录、tooltip 或滚动。
+ */
+import type { BackdropConfig } from '../lib/backdrops';
+
+interface Props {
+	config: BackdropConfig;
+}
+
+const { config } = Astro.props;
+---
+
+<div
+	class:list={[
+		'page-backdrop',
+		`page-backdrop--${config.variant}`,
+		`page-backdrop--${config.intensity}`,
+		`page-backdrop--${config.scope}`,
+		{ 'is-interactive': config.interactive },
+	]}
+	data-page-backdrop={config.variant}
+	data-backdrop-scope={config.scope}
+	data-backdrop-interactive={config.interactive ? 'true' : undefined}
+	aria-hidden="true"
+>
+	<span class="backdrop-layer backdrop-layer-a"></span>
+	<span class="backdrop-layer backdrop-layer-b"></span>
+	<span class="backdrop-layer backdrop-layer-c"></span>
+</div>

@@ -65,50 +65,53 @@ function formatDay(d: Date): string {
 
 			{
 				years.length > 0 ? (
-					<div class="timeline">
-						{years.map((y) => (
-							<section id={`year-${y.year}`} class="timeline-year" aria-label={`${y.year} 年`}>
-								<div class="timeline-year-heading">
-									<p>{y.year}</p>
-									<span>{y.count} 篇记录</span>
-								</div>
-
-								{y.months.map((m) => (
-									<div class="month-group">
-										<div class="month-label">
-											<span>{MONTH_NAMES[m.month]}</span>
-											<small>{m.posts.length} 篇</small>
-										</div>
-										<div class="timeline-list">
-											{m.posts.map((post) => (
-												<a class="timeline-item" href={postHref(post)}>
-													<svg class="timeline-icon" viewBox="0 0 40 44" fill="none" aria-hidden="true">
-														<path d="M9 4h15l7 7v29H9V4Z" stroke="currentColor" stroke-width="1.5" />
-														<path d="M24 4v8h7" stroke="currentColor" stroke-width="1.5" />
-														<path d="M14 20h12M14 26h12M14 32h7" stroke="currentColor" stroke-width="1.5" />
-													</svg>
-													<span class="timeline-copy">
-														<span class="timeline-title-row">
-															<strong>{post.data.title}</strong>
-															<TagList
-																tags={post.data.tags}
-																max={4}
-																linkable={false}
-																class="timeline-item-tags"
-															/>
-														</span>
-														<span class="timeline-summary" data-tooltip={post.data.description}>{post.data.description}</span>
-													</span>
-													<time class="timeline-date" datetime={post.data.pubDate.toISOString()}>
-														{formatDay(post.data.pubDate)}
-													</time>
-												</a>
-											))}
-										</div>
+					<div class="timeline-shell">
+						<div class="timeline-glow" aria-hidden="true"></div>
+						<div class="timeline">
+							{years.map((y) => (
+								<section id={`year-${y.year}`} class="timeline-year" aria-label={`${y.year} 年`}>
+									<div class="timeline-year-heading">
+										<p>{y.year}</p>
+										<span>{y.count} 篇记录</span>
 									</div>
-								))}
-							</section>
-						))}
+
+									{y.months.map((m) => (
+										<div class="month-group">
+											<div class="month-label">
+												<span>{MONTH_NAMES[m.month]}</span>
+												<small>{m.posts.length} 篇</small>
+											</div>
+											<div class="timeline-list">
+												{m.posts.map((post) => (
+													<a class="timeline-item" href={postHref(post)}>
+														<svg class="timeline-icon" viewBox="0 0 40 44" fill="none" aria-hidden="true">
+															<path d="M9 4h15l7 7v29H9V4Z" stroke="currentColor" stroke-width="1.5" />
+															<path d="M24 4v8h7" stroke="currentColor" stroke-width="1.5" />
+															<path d="M14 20h12M14 26h12M14 32h7" stroke="currentColor" stroke-width="1.5" />
+														</svg>
+														<span class="timeline-copy">
+															<span class="timeline-title-row">
+																<strong>{post.data.title}</strong>
+																<TagList
+																	tags={post.data.tags}
+																	max={4}
+																	linkable={false}
+																	class="timeline-item-tags"
+																/>
+															</span>
+															<span class="timeline-summary" data-tooltip={post.data.description}>{post.data.description}</span>
+														</span>
+														<time class="timeline-date" datetime={post.data.pubDate.toISOString()}>
+															{formatDay(post.data.pubDate)}
+														</time>
+													</a>
+												))}
+											</div>
+										</div>
+									))}
+								</section>
+							))}
+						</div>
 					</div>
 				) : (
 					<p>还没有文章。</p>
@@ -214,6 +217,63 @@ function formatDay(d: Date): string {
 	}
 
 	/* ---------- 时间轴主体 ---------- */
+	.timeline-shell {
+		position: relative;
+	}
+
+	/* 沿时间轴主线的一条极淡光带：只装饰左右两栏之间的空隙 */
+	.timeline-glow {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: calc(150px + 1rem);
+		width: 1px;
+		background: linear-gradient(
+			to bottom,
+			transparent 0%,
+			color-mix(in oklab, var(--c-accent) 26%, transparent) 8%,
+			color-mix(in oklab, var(--c-accent) 26%, transparent) 92%,
+			transparent 100%
+		);
+		opacity: 0.55;
+		pointer-events: none;
+		-webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
+		mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
+	}
+
+	.timeline-glow::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -1px;
+		width: 3px;
+		height: 18%;
+		background: linear-gradient(
+			to bottom,
+			transparent,
+			color-mix(in oklab, var(--c-accent) 40%, transparent),
+			transparent
+		);
+		opacity: 0;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.timeline-glow::after {
+			opacity: 0.7;
+			animation: timeline-beam 14s ease-in-out infinite;
+		}
+	}
+
+	@keyframes timeline-beam {
+		from {
+			transform: translateY(-110%);
+		}
+
+		to {
+			transform: translateY(560%);
+		}
+	}
+
 	.timeline {
 		display: grid;
 		gap: 3rem;
@@ -361,6 +421,10 @@ function formatDay(d: Date): string {
 	}
 
 	@media (max-width: 720px) {
+		.timeline-glow {
+			display: none;
+		}
+
 		.timeline-year-heading,
 		.month-group {
 			grid-template-columns: minmax(0, 1fr);

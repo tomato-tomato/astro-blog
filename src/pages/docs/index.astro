@@ -21,7 +21,7 @@ const pageTitle = books.length === 1 ? books[0].meta.data.title : '文档';
 const pageDescription = books.length === 1 ? books[0].meta.data.description : SITE_DESCRIPTION;
 ---
 
-<BaseLayout title={`${pageTitle} | ${SITE_TITLE}`} description={pageDescription}>
+<BaseLayout title={`${pageTitle} | ${SITE_TITLE}`} description={pageDescription} backdrop="docIndex">
 	<main>
 		<PageHeader title={pageTitle} meta={`${books.length} 本文档册 · 共 ${total} 篇文档`} />
 

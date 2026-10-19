@@ -32,6 +32,7 @@ const { tag, posts } = Astro.props;
 <BaseLayout
 	title={`标签：${tag} | ${SITE_TITLE}`}
 	description={`${SITE_TITLE} 中带有「${tag}」标签的全部文章，共 ${posts.length} 篇。`}
+	backdrop="tagDetail"
 >
 	<main>
 		<PageHeader

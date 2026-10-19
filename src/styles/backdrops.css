@@ -1,0 +1,417 @@
+/*
+ * 页面背景动效
+ * ------------
+ * 结构见 src/components/PageBackdrop.astro，语义映射见 src/lib/backdrops.ts。
+ *
+ * 约定：
+ *   - 背景层挂在 body 下、z-index: -1，body 的 isolation 保证它在内容之后；
+ *   - 所有动画都只包在 prefers-reduced-motion: no-preference 里；
+ *   - 只动画 transform / opacity，不动画 filter / top / left；
+ *   - 背景层 pointer-events: none，不参与命中测试；
+ *   - 颜色一律从 --c-accent / --c-ink 派生，不写字面色值。
+ *
+ * 范围：
+ *   - page（默认）：fixed 铺满视口，内容从上面滚过；
+ *   - header：只占页头一条，靠 mask 向下淡出，留给以后需要更克制的页面。
+ */
+
+.page-backdrop {
+	--backdrop-opacity: 0.62;
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+	user-select: none;
+	opacity: var(--backdrop-opacity);
+}
+
+.page-backdrop--normal {
+	--backdrop-opacity: 0.8;
+}
+
+.page-backdrop--strong {
+	--backdrop-opacity: 0.95;
+}
+
+/* 暗色下强调色更亮，整体压一点，避免发光过重 */
+[data-theme='dark'] .page-backdrop:not(.page-backdrop--paper) {
+	opacity: calc(var(--backdrop-opacity) * 0.85);
+}
+
+.backdrop-layer {
+	position: absolute;
+	inset: 0;
+	display: block;
+	pointer-events: none;
+}
+
+/* ---------- 极光：文章列表 / 标签详情 ---------- */
+
+.page-backdrop--aurora {
+	-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, rgba(0, 0, 0, 0.45) 100%);
+	mask-image: linear-gradient(to bottom, #000 0%, #000 58%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.page-backdrop--aurora .backdrop-layer-a {
+	background:
+		radial-gradient(
+			48% 62% at 14% 4%,
+			color-mix(in oklab, var(--c-accent) 30%, transparent),
+			transparent 68%
+		),
+		radial-gradient(
+			40% 52% at 86% 0%,
+			color-mix(in oklab, var(--c-accent) 20%, transparent),
+			transparent 66%
+		);
+	transform: translate3d(-2%, -1%, 0) scale(1.05);
+}
+
+.page-backdrop--aurora .backdrop-layer-b {
+	background:
+		radial-gradient(
+			42% 54% at 62% 30%,
+			color-mix(in oklab, var(--c-accent) 14%, transparent),
+			transparent 70%
+		),
+		radial-gradient(
+			38% 48% at 26% 66%,
+			color-mix(in oklab, var(--c-accent) 9%, transparent),
+			transparent 72%
+		);
+	transform: translate3d(2%, 1%, 0) scale(1.08);
+}
+
+/* ---------- 网格光晕：分类总览 / 文档总入口 ---------- */
+
+.page-backdrop--grid {
+	-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, rgba(0, 0, 0, 0.4) 100%);
+	mask-image: linear-gradient(to bottom, #000 0%, #000 62%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.page-backdrop--grid .backdrop-layer-a {
+	background-image:
+		linear-gradient(
+			to right,
+			color-mix(in oklab, var(--c-accent) 22%, transparent) 1px,
+			transparent 1px
+		),
+		linear-gradient(
+			to bottom,
+			color-mix(in oklab, var(--c-accent) 22%, transparent) 1px,
+			transparent 1px
+		);
+	background-size: 54px 54px;
+	opacity: 0.8;
+}
+
+.page-backdrop--grid .backdrop-layer-b {
+	background: radial-gradient(
+		28rem circle at var(--backdrop-pointer-x, 50%) var(--backdrop-pointer-y, 18%),
+		color-mix(in oklab, var(--c-accent) 26%, transparent),
+		transparent 66%
+	);
+}
+
+.page-backdrop--grid .backdrop-layer-c {
+	background: radial-gradient(
+		52% 44% at 50% 0%,
+		color-mix(in oklab, var(--c-accent) 12%, transparent),
+		transparent 72%
+	);
+}
+
+/* ---------- 点阵：文档册目录 / 标签云 ---------- */
+
+.page-backdrop--dots {
+	-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, rgba(0, 0, 0, 0.4) 100%);
+	mask-image: linear-gradient(to bottom, #000 0%, #000 62%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.page-backdrop--dots .backdrop-layer-a {
+	inset: -40px;
+	background-image: radial-gradient(
+		circle,
+		color-mix(in oklab, var(--c-accent) 34%, transparent) 1.2px,
+		transparent 1.7px
+	);
+	background-size: 20px 20px;
+	opacity: 0.85;
+}
+
+.page-backdrop--dots .backdrop-layer-b {
+	background: radial-gradient(
+		48% 56% at 74% 4%,
+		color-mix(in oklab, var(--c-accent) 15%, transparent),
+		transparent 72%
+	);
+}
+
+/* ---------- 光束：分类详情 ---------- */
+
+.page-backdrop--sweep {
+	-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 66%, rgba(0, 0, 0, 0.35) 100%);
+	mask-image: linear-gradient(to bottom, #000 0%, #000 66%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+.page-backdrop--sweep .backdrop-layer-a {
+	inset: -30% -20%;
+	background: linear-gradient(
+		100deg,
+		transparent 34%,
+		color-mix(in oklab, var(--c-accent) 22%, transparent) 47%,
+		color-mix(in oklab, var(--c-accent) 10%, transparent) 54%,
+		transparent 66%
+	);
+	opacity: 0.9;
+	transform: translate3d(-8%, 0, 0) rotate(-8deg) scale(1.2);
+}
+
+.page-backdrop--sweep .backdrop-layer-b {
+	background:
+		radial-gradient(
+			58% 46% at 50% 0%,
+			color-mix(in oklab, var(--c-accent) 13%, transparent),
+			transparent 74%
+		),
+		radial-gradient(
+			40% 40% at 12% 82%,
+			color-mix(in oklab, var(--c-accent) 8%, transparent),
+			transparent 72%
+		);
+}
+
+/* ---------- 静态纸纹：文章 / 文档 / 关于 ---------- */
+
+.page-backdrop--paper {
+	--backdrop-opacity: 1;
+	--backdrop-tint: color-mix(in oklab, var(--c-ink) 3.2%, transparent);
+	--backdrop-vignette: color-mix(in oklab, var(--c-ink) 10%, transparent);
+}
+
+[data-theme='dark'] .page-backdrop--paper {
+	--backdrop-tint: color-mix(in oklab, var(--c-ink) 3%, transparent);
+	--backdrop-vignette: transparent;
+}
+
+.page-backdrop--paper .backdrop-layer-a {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E");
+	background-size: 180px 180px;
+	opacity: 0.22;
+	mix-blend-mode: multiply;
+}
+
+[data-theme='dark'] .page-backdrop--paper .backdrop-layer-a {
+	opacity: 0.12;
+	mix-blend-mode: screen;
+}
+
+/* 纸底本身：极淡的一层灰，让「白底」变成「纸底」 */
+.page-backdrop--paper .backdrop-layer-b {
+	background:
+		var(--backdrop-tint),
+		radial-gradient(
+			62% 40% at 50% 0%,
+			color-mix(in oklab, var(--c-accent) 7%, transparent),
+			transparent 74%
+		);
+}
+
+/* 四周压一点暗角，纸感更明显 */
+.page-backdrop--paper .backdrop-layer-c {
+	background: radial-gradient(
+		ellipse 118% 86% at 50% 44%,
+		transparent 55%,
+		var(--backdrop-vignette) 100%
+	);
+}
+
+/* ---------- 星尘：404 ---------- */
+
+.page-backdrop--stars .backdrop-layer-a {
+	background-image:
+		radial-gradient(
+			circle,
+			color-mix(in oklab, var(--c-accent) 55%, transparent) 0 1px,
+			transparent 1.5px
+		),
+		radial-gradient(
+			circle,
+			color-mix(in oklab, var(--c-accent) 38%, transparent) 0 1.3px,
+			transparent 1.9px
+		),
+		radial-gradient(
+			circle,
+			color-mix(in oklab, var(--c-accent) 26%, transparent) 0 1.6px,
+			transparent 2.4px
+		);
+	background-size:
+		137px 137px,
+		211px 211px,
+		313px 313px;
+	background-position:
+		0 0,
+		43px 71px,
+		97px 29px;
+	opacity: 0.85;
+}
+
+.page-backdrop--stars .backdrop-layer-b {
+	background-image:
+		radial-gradient(circle, color-mix(in oklab, var(--c-accent) 85%, transparent) 0 2px, transparent 3px),
+		radial-gradient(circle, color-mix(in oklab, var(--c-accent) 70%, transparent) 0 1.6px, transparent 2.6px),
+		radial-gradient(circle, color-mix(in oklab, var(--c-accent) 75%, transparent) 0 1.8px, transparent 2.8px),
+		radial-gradient(circle, color-mix(in oklab, var(--c-accent) 65%, transparent) 0 1.5px, transparent 2.4px),
+		radial-gradient(circle, color-mix(in oklab, var(--c-accent) 80%, transparent) 0 2.2px, transparent 3.2px),
+		radial-gradient(circle, color-mix(in oklab, var(--c-accent) 60%, transparent) 0 1.4px, transparent 2.2px);
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	background-position:
+		14% 18%,
+		72% 12%,
+		38% 64%,
+		86% 72%,
+		58% 34%,
+		22% 82%;
+	opacity: 0.9;
+}
+
+.page-backdrop--stars .backdrop-layer-c {
+	background: radial-gradient(
+		58% 46% at 50% 26%,
+		color-mix(in oklab, var(--c-accent) 6%, transparent),
+		transparent 76%
+	);
+}
+
+/* ---------- 页头带状范围（备用） ---------- */
+
+.page-backdrop--header {
+	position: absolute;
+	inset: 0 0 auto;
+	height: clamp(22rem, 50vh, 34rem);
+	-webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+	mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+}
+
+/* ---------- 动画：只在允许动效时启用 ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+	.page-backdrop--aurora .backdrop-layer-a {
+		animation: backdrop-aurora-a 24s ease-in-out infinite alternate;
+	}
+
+	.page-backdrop--aurora .backdrop-layer-b {
+		animation: backdrop-aurora-b 30s ease-in-out infinite alternate;
+	}
+
+	.page-backdrop--grid .backdrop-layer-c {
+		animation: backdrop-breathe 18s ease-in-out infinite alternate;
+	}
+
+	.page-backdrop--dots .backdrop-layer-a {
+		animation: backdrop-dots-drift 36s linear infinite;
+	}
+
+	.page-backdrop--sweep .backdrop-layer-a {
+		animation: backdrop-sweep 16s ease-in-out infinite alternate;
+	}
+
+	.page-backdrop--stars .backdrop-layer-a {
+		animation: backdrop-twinkle 7s ease-in-out infinite alternate;
+	}
+
+	.page-backdrop--stars .backdrop-layer-b {
+		animation: backdrop-twinkle 11s ease-in-out infinite alternate-reverse;
+	}
+
+	.page-backdrop--stars .backdrop-layer-c {
+		animation: backdrop-breathe 16s ease-in-out infinite alternate;
+	}
+}
+
+@keyframes backdrop-aurora-a {
+	from {
+		transform: translate3d(-2%, -1%, 0) scale(1.05);
+	}
+
+	to {
+		transform: translate3d(2%, 1.5%, 0) scale(1.12);
+	}
+}
+
+@keyframes backdrop-aurora-b {
+	from {
+		transform: translate3d(2%, 1%, 0) scale(1.08);
+	}
+
+	to {
+		transform: translate3d(-2%, -1.5%, 0) scale(1.03);
+	}
+}
+
+@keyframes backdrop-breathe {
+	from {
+		opacity: 0.55;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes backdrop-dots-drift {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+
+	to {
+		transform: translate3d(20px, 20px, 0);
+	}
+}
+
+@keyframes backdrop-sweep {
+	from {
+		transform: translate3d(-10%, 0, 0) rotate(-8deg) scale(1.2);
+	}
+
+	to {
+		transform: translate3d(10%, 0, 0) rotate(-8deg) scale(1.2);
+	}
+}
+
+@keyframes backdrop-twinkle {
+	from {
+		opacity: 0.5;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+/* ---------- 窄屏：减层、降密度，避免小屏过花 ---------- */
+
+@media (max-width: 720px) {
+	.page-backdrop--aurora .backdrop-layer-b,
+	.page-backdrop--grid .backdrop-layer-c,
+	.page-backdrop--dots .backdrop-layer-b,
+	.page-backdrop--sweep .backdrop-layer-b {
+		display: none;
+	}
+
+	.page-backdrop--grid .backdrop-layer-a {
+		background-size: 44px 44px;
+		opacity: 0.6;
+	}
+
+	.page-backdrop--dots .backdrop-layer-a {
+		background-size: 18px 18px;
+		opacity: 0.65;
+	}
+
+	.page-backdrop--stars .backdrop-layer-c {
+		display: none;
+	}
+}

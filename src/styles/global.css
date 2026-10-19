@@ -8,6 +8,7 @@
  */
 
 @import "./tokens.css";
+@import "./backdrops.css";
 
 *,
 *::before,
@@ -45,6 +46,9 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	/* 背景动效层用 z-index: -1；isolation 让它留在 body 背景之上、内容之下 */
+	position: relative;
+	isolation: isolate;
 }
 
 /* 内容区与页头共用同一套宽度：

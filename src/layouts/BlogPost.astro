@@ -11,6 +11,7 @@ import BaseLayout from './BaseLayout.astro';
 import ArticleBody from '../components/ArticleBody.astro';
 import ArticleOutline from '../components/ArticleOutline.astro';
 import { buildToc, type Heading } from '../lib/toc';
+import type { BackdropKey } from '../lib/backdrops';
 
 // 只声明布局真正用到的字段；about.astro 复用本布局，不需要分类 / 标签。
 type Props = {
@@ -25,6 +26,8 @@ type Props = {
 	headings?: Heading[];
 	/** Open Graph 类型；about 这类固定页传 website */
 	type?: 'website' | 'article';
+	/** 背景动效语义 key；文章默认静态纸纹，关于页可单独指定 */
+	backdrop?: BackdropKey;
 };
 
 const {
@@ -37,6 +40,7 @@ const {
 	tags = [],
 	headings = [],
 	type = 'article',
+	backdrop = 'article',
 } = Astro.props;
 
 const toc = buildToc(headings);
@@ -50,6 +54,7 @@ const hasToc = toc.length > 0;
 	type={type}
 	publishedTime={type === 'article' ? pubDate : undefined}
 	modifiedTime={type === 'article' ? (updatedDate ?? pubDate) : undefined}
+	backdrop={backdrop}
 >
 	<main class="article-shell" data-layout="post" data-has-toc={hasToc}>
 		<ArticleBody

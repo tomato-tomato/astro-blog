@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE } from '../consts';
 ---
 
-<BaseLayout title={`Page not found | ${SITE_TITLE}`} description="404 - Page not found">
+<BaseLayout title={`Page not found | ${SITE_TITLE}`} description="404 - Page not found" backdrop="notFound">
 	<meta slot="head" name="robots" content="noindex" />
 	<main>
 		<h1>404 - Page not found</h1>

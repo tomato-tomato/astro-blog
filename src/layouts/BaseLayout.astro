@@ -13,6 +13,8 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import PageBackdrop from '../components/PageBackdrop.astro';
+import { getBackdrop, type BackdropKey } from '../lib/backdrops';
 import type { ImageMetadata } from 'astro';
 
 interface Props {
@@ -24,9 +26,12 @@ interface Props {
 	type?: 'website' | 'article';
 	publishedTime?: Date;
 	modifiedTime?: Date;
+	/** 背景动效的语义 key，具体效果见 src/lib/backdrops.ts */
+	backdrop?: BackdropKey;
 }
 
-const { title, description, image, type, publishedTime, modifiedTime } = Astro.props;
+const { title, description, image, type, publishedTime, modifiedTime, backdrop } = Astro.props;
+const backdropConfig = getBackdrop(backdrop);
 ---
 
 <!doctype html>
@@ -43,6 +48,7 @@ const { title, description, image, type, publishedTime, modifiedTime } = Astro.p
 		<slot name="head" />
 	</head>
 	<body>
+		{backdropConfig && <PageBackdrop config={backdropConfig} />}
 		<Header />
 		<slot />
 		<Footer />
