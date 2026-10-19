@@ -4,14 +4,50 @@ import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
 ---
 
 <Layout
-	title="About Me"
-	description="Lorem ipsum dolor sit amet"
+	title="关于我"
+	description="严凌峰的个人博客。2016 年入行前端，React 主力，做过财务 SaaS 与跨境电商中后台；这里只写我真正做过、并且能讲清的东西。"
 	pubDate={new Date('August 08 2021')}
 	updatedDate={new Date('Oct 19 2026')}
 	heroImage={AboutHeroImage}
 	type="website"
 	backdrop="about"
 >
-	<p>做了好几年前端，今年9月被裁了。休息休息、整理整理、学习学习，慢慢找工作！💪</p>
-	<p>欢迎来到我的自留地！😎</p>
+	<p>欢迎来到我的自留地——我自己那一小块地，有空就侍弄一下：把做成的事写清楚，也把正在学的东西记下来。</p>
+
+	<p>
+		入行十年，真正做前端工程是五六年，React 主力。最早几年做官网和电商站，偏页面还原和 SEO；
+		这五六年基本都在银行和电商的中后台里：凭证、结账、报表这些最复杂的财务模块，
+		把一个个 Angular 系统页面搬到了 React；再往后做公共组件、存量页面框架迁移，
+		还有开发链路的治理。两段都是外派，一家在招银科技，一家在阿里。
+	</p>
+
+	<h2>现在在做什么</h2>
+	<p>
+		今年 9 月因为团队人员优化离开了上一份工作，现在正在往 <strong>AI 应用开发</strong>
+		转，也在找下一份工作。以前是把 AI 当工具用——优化提示词、测它的能力边界、用 AI
+		加上内部能力搭业务知识库；现在想弄明白工具背后到底是怎么运作的，所以系统补服务端、RAG 和 Agent
+		这条线：从最熟的 Node 生态出发学 NestJS，再迁到 Python / FastAPI，最后做能演示的 Agent 项目。
+		顺带在学 Rust，放在低能量时段，不占主线。
+	</p>
+	<p>
+		这个博客就是这条路上的公开记录。学习中的疑问或者想法，解决了就写出来，没解决的就记下来，没跑通的不写，写出来的每一条都能展开讲。
+	</p>
+
+	<h2>关于这个博客</h2>
+	<p>
+		<a href="/blog/">文章</a> 是实践复盘和踩坑记录，按分类和标签组织；<a href="/docs/">文档</a>
+		是成体系的长文，带左栏目录，可以当手册直接查，比如 Lathe 技能的使用指南。
+	</p>
+	<p>
+		站点是自己搭的：Astro 7 + Content Layer，纯静态部署在 Cloudflare
+		Workers，亮暗双主题、背景动效、头图在构建期生成、关键交互有端到端测试兜底。源码在
+		<a href="https://github.com/tomato-tomato/astro-blog" rel="me">GitHub</a>，欢迎拍砖。
+	</p>
+
+	<h2>联系</h2>
+	<p>
+		GitHub：<a href="https://github.com/tomato-tomato" rel="me">tomato-tomato</a>，订阅：<a href="/rss.xml">RSS</a>。
+		邮箱就不挂在页面上了——爬虫跑得比读者快，需要联系的话 GitHub 上找我就好。
+	</p>
+	<p>看到写错的地方欢迎指出，我改完会把页首的修改时间更新上去。</p>
 </Layout>
