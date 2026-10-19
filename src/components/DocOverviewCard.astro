@@ -6,7 +6,7 @@
  * 点击直达第一篇文档，左侧目录会以第一篇为当前项。
  */
 import ContentCard from './ContentCard.astro';
-import { docBookHref, type DocBook, type DocOverview } from '../lib/posts';
+import { docBookHref, DOC_CATEGORY, type DocBook, type DocOverview } from '../lib/posts';
 
 interface Props {
 	overview: DocOverview;
@@ -16,15 +16,16 @@ interface Props {
 const { overview, book } = Astro.props;
 const { title, description, heroImage } = overview.data;
 const count = book.posts.length;
-const first = book.posts[0];
+const href = docBookHref(book); // 空文档集会在数据层直接报错
+const first = book.posts[0]!;
 ---
 
 <ContentCard
-	href={docBookHref(book)}
+	href={href}
 	title={title}
 	description={description}
 	image={heroImage}
-	category="文档"
+	category={DOC_CATEGORY}
 	badge={`${count} 篇文档`}
 	ariaLabel={`${title}：共 ${count} 篇文档，从《${first.data.title}》开始阅读`}
 />

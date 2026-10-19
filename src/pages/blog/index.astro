@@ -1,7 +1,5 @@
 ---
-import BaseHead from '../../components/BaseHead.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PostCard from '../../components/PostCard.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
@@ -11,29 +9,21 @@ import { getArticles } from '../../lib/posts';
 const posts = await getArticles();
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={`全部文章 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<PageHeader title="全部文章" meta={`共 ${posts.length} 篇`} />
-			{
-				posts.length > 0 ? (
-					<ul class="post-grid">
-						{posts.map((post) => (
-							<li>
-								<PostCard post={post} />
-							</li>
-						))}
-					</ul>
-				) : (
-					<p>还没有文章。</p>
-				)
-			}
-		</main>
-		<Footer />
-	</body>
-</html>
+<BaseLayout title={`全部文章 | ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+	<main>
+		<PageHeader title="全部文章" meta={`共 ${posts.length} 篇`} />
+		{
+			posts.length > 0 ? (
+				<ul class="post-grid">
+					{posts.map((post) => (
+						<li>
+							<PostCard post={post} />
+						</li>
+					))}
+				</ul>
+			) : (
+				<p>还没有文章。</p>
+			)
+		}
+	</main>
+</BaseLayout>

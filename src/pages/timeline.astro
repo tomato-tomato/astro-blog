@@ -10,9 +10,7 @@
  *   - 顶部多了一块标签区（需求：顶部要展示所有标签）
  *   - 每个条目的标题后面直接跟标签，且标签不可点（条目整体是一个链接，不能嵌套 a）
  */
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import TagList from '../components/TagList.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
@@ -33,14 +31,8 @@ function formatDay(d: Date): string {
 }
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={`时间轴 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
+<BaseLayout title={`时间轴 | ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+	<main>
 			<PageHeader title="时间轴" meta={`共 ${posts.length} 篇`} />
 
 			{
@@ -122,10 +114,8 @@ function formatDay(d: Date): string {
 					<p>还没有文章。</p>
 				)
 			}
-		</main>
-		<Footer />
-	</body>
-</html>
+	</main>
+</BaseLayout>
 
 <style>
 	/* ---------- 顶部标签区 ---------- */

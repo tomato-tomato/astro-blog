@@ -4,7 +4,7 @@
  *
  * 桌面端 sticky 吸在视口里，不随页面滚走；窄屏折叠成文首的一个 <details>。
  * 标题过长时单行省略，完整文本走 title 属性。
- * 高亮由 BlogPost.astro 里的滚动监听负责（只认 [data-outline] a）。
+ * 高亮由 src/scripts/article-outline.ts 的滚动监听负责（只认 [data-outline] a）。
  */
 import type { TocNode } from '../lib/toc';
 

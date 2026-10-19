@@ -186,9 +186,9 @@
 				   亮 → 暗 用 clip-path 从 0 扩到满屏；
 				   暗 → 亮 用遮罩把洞从满屏收到 0。
 				   动 ::view-transition-old 会稳闪一帧旧画面（逐帧实测过）。 */
-				const keyframes = shrink
-					? ({ '--vt-r': [`${radius}px`, '0px'] } as Keyframe)
-					: ({ clipPath: [circle(0), circle(radius)] } as Keyframe);
+				const keyframes: PropertyIndexedKeyframes = shrink
+					? { '--vt-r': [`${radius}px`, '0px'] }
+					: { clipPath: [circle(0), circle(radius)] };
 
 				root.animate(keyframes, {
 					duration: SWITCH_DURATION,

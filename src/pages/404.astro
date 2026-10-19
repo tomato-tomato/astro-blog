@@ -1,25 +1,15 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE } from '../consts';
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={`Page not found | ${SITE_TITLE}`} description="404 - Page not found" />
-		<meta name="robots" content="noindex" />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>404 - Page not found</h1>
-			<p>
-				这个地址下没有内容。可以回到 <a href="/">首页</a>，或者看看
-				<a href="/blog/">全部文章</a>。
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<BaseLayout title={`Page not found | ${SITE_TITLE}`} description="404 - Page not found">
+	<meta slot="head" name="robots" content="noindex" />
+	<main>
+		<h1>404 - Page not found</h1>
+		<p>
+			这个地址下没有内容。可以回到 <a href="/">首页</a>，或者看看
+			<a href="/blog/">全部文章</a>。
+		</p>
+	</main>
+</BaseLayout>

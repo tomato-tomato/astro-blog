@@ -1,0 +1,48 @@
+---
+/*
+ * 全站页面外壳：doctype、<head>、页头、页脚。
+ *
+ * 只负责所有页面都一样的部分；<main> 留给各页面自己写，
+ * 因为首页和文章页的 main 有不同的布局类名与宽度。
+ *
+ * 约定：
+ *   - 全站语言统一为 zh-CN，页面不要再自己写 <html>。
+ *   - 需要强制高亮某个导航项时传 activeHref：
+ *     文档阅读页的 URL 在 /blog/ 下，但页头应高亮「文档」，由 BlogPost 传入。
+ *   - 页面独有的 <head> 内容（如 404 的 noindex）放进 head 具名插槽。
+ */
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+	title: string;
+	description: string;
+	/** 用于 og:image / twitter:image；不传时由 BaseHead 用占位图兜底 */
+	image?: ImageMetadata;
+	/** 显式指定要高亮的导航项（传 href），不传则各链接按 pathname 自动判断 */
+	activeHref?: string;
+}
+
+const { title, description, image, activeHref } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={title} description={description} image={image} />
+		<slot name="head" />
+	</head>
+	<body>
+		<Header activeHref={activeHref} />
+		<slot />
+		<Footer />
+		<script>
+			// 页面脚本由这里统一按 DOM 分发，页面本身不再各自挂 <script>
+			import { initPage } from '../scripts/page';
+
+			initPage();
+		</script>
+	</body>
+</html>

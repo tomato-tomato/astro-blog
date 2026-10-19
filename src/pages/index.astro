@@ -16,9 +16,7 @@
  *   tsParticles 却按 getElementById 找容器，会另建一个 canvas 挂到 body。
  *   直接用引擎：tsParticles.load({ element }) —— 路径唯一，dev/prod 行为一致。
  */
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
 import type { ISourceOptions } from '@tsparticles/engine';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
@@ -70,14 +68,8 @@ const particleOptions: ISourceOptions = {
 };
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main class="home-main">
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+	<main class="home-main">
 			<section class="home-hero">
 				<!-- 粒子画布挂在这里；选项以 JSON 交给客户端脚本，
 				     由它按当前主题着色后再调 tsParticles.load。 -->
@@ -138,59 +130,8 @@ const particleOptions: ISourceOptions = {
 					</section>
 				)
 			}
-		</main>
-		<Footer />
-	</body>
-</html>
-
-<script>
-	import { tsParticles } from '@tsparticles/engine';
-	import { loadSlim } from '@tsparticles/slim';
-
-	/* 亮/暗两套粒子色，与 tokens.css 的 --c-accent 保持一致 */
-	const COLORS = { light: '#087ea4', dark: '#58c4dc' };
-
-	const el = document.getElementById('hero-particles');
-	const baked = el?.dataset.particlesOptions;
-
-	if (el && baked) {
-		const currentTheme = () =>
-			document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-
-		const buildOptions = (theme: string) => {
-			const options = JSON.parse(baked);
-			const color = COLORS[theme as 'light' | 'dark'] ?? COLORS.light;
-			if (options?.particles?.color) options.particles.color.value = color;
-			if (options?.particles?.links?.color) options.particles.links.color = color;
-			return options;
-		};
-
-		let container: Awaited<ReturnType<typeof tsParticles.load>> = undefined;
-
-		const render = async (theme: string) => {
-			container?.destroy();
-			container = await tsParticles.load({
-				id: 'hero-particles',
-				element: el,
-				options: buildOptions(theme),
-			});
-		};
-
-		// 插件注册完成后才能 load；注册和 load 用的是同一个引擎实例
-		loadSlim(tsParticles)
-			.then(() => render(currentTheme()))
-			.then(() => {
-				// 跟随页头的主题切换：销毁旧容器，按新配色重建
-				new MutationObserver(() => { /* EXPERIMENT: 不重载 */ }).observe(
-					document.documentElement,
-					{ attributes: true, attributeFilter: ['data-theme'] },
-				);
-			})
-			.catch((error) => {
-				console.error('[particles] 初始化失败', error);
-			});
-	}
-</script>
+	</main>
+</BaseLayout>
 
 <style>
 	/* 首页要满屏，所以取消 main 的窄栏与上下内边距，由各区块自己控制 */

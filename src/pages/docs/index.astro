@@ -8,12 +8,10 @@
  * 完整目录仍在 /docs/<分类>/，从文档页左栏的「总览」进入。
  */
 import { Image } from 'astro:assets';
-import BaseHead from '../../components/BaseHead.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { docBookHref, getDocBooks, getDocsOverview, getPosts } from '../../lib/posts';
+import { DOC_CATEGORY, docBookHref, getDocBooks, getDocsOverview, getPosts } from '../../lib/posts';
 
 const books = getDocBooks(await getPosts());
 const overview = books.length > 0 ? await getDocsOverview() : undefined;
@@ -21,18 +19,12 @@ const total = books.reduce((n, book) => n + book.posts.length, 0);
 const { title, description, heroImage } = overview?.data ?? {};
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead
-			title={`${title ?? '文档'} | ${SITE_TITLE}`}
-			description={description ?? SITE_DESCRIPTION}
-		/>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<PageHeader title={title ?? '文档'} meta={`共 ${total} 篇文档`} />
+<BaseLayout
+	title={`${title ?? DOC_CATEGORY} | ${SITE_TITLE}`}
+	description={description ?? SITE_DESCRIPTION}
+>
+	<main>
+			<PageHeader title={title ?? DOC_CATEGORY} meta={`共 ${total} 篇文档`} />
 
 			{
 				books.length > 0 ? (
@@ -76,10 +68,8 @@ const { title, description, heroImage } = overview?.data ?? {};
 					<p>还没有文档集。给文章加上 <code>articleLayout: doc</code> 就会出现。</p>
 				)
 			}
-		</main>
-		<Footer />
-	</body>
-</html>
+	</main>
+</BaseLayout>
 
 <style>
 	.book-grid {

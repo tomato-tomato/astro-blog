@@ -19,6 +19,17 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 export type Post = CollectionEntry<'blog'>;
 export type DocOverview = CollectionEntry<'docs'>;
 
+/**
+ * 文档统一归属的分类（目录名）。
+ * 分类页据此识别「文档」分类，并把其中的文档折叠成一张总入口卡片。
+ */
+export const DOC_CATEGORY = '文档';
+
+/** 是否为文档文章（articleLayout: doc） */
+export function isDocPost(post: Post): boolean {
+	return post.data.articleLayout === 'doc';
+}
+
 /** 全部已发布文章（含文档文章），按发布时间倒序 */
 export async function getPosts(): Promise<Post[]> {
 	const posts = await getCollection('blog', ({ data }) => !data.draft);
@@ -31,7 +42,7 @@ export async function getPosts(): Promise<Post[]> {
  */
 export async function getArticles(): Promise<Post[]> {
 	const posts = await getPosts();
-	return posts.filter((post) => post.data.articleLayout !== 'doc');
+	return posts.filter((post) => !isDocPost(post));
 }
 
 /** 从 id 推导分类：`CSS/Flex` → `CSS`；直接放在 blog/ 下的归入「未分类」 */
@@ -116,24 +127,31 @@ export type DocBook = { name: string; posts: Post[] };
 
 /** 文档总入口的展示信息：/docs/ 与分类页的「文档」卡片共用 */
 export async function getDocsOverview(): Promise<DocOverview> {
-	const [overview] = await getCollection('docs');
-	if (!overview) {
+	const entries = await getCollection('docs');
+	if (entries.length === 0) {
 		throw new Error('缺少文档总入口元数据：请创建 src/content/docs/overview.md');
 	}
-	return overview;
+	if (entries.length > 1) {
+		throw new Error(
+			`文档总入口元数据只能有一条，当前有 ${entries.length} 条：${entries
+				.map((entry) => entry.id)
+				.join('、')}。请只保留 src/content/docs/overview.md。`,
+		);
+	}
+	return entries[0];
 }
 
 export function getDocBooks(posts: Post[]): DocBook[] {
 	const map = new Map<string, Post[]>();
 
 	for (const post of posts) {
-		if (post.data.articleLayout !== 'doc') continue;
+		if (!isDocPost(post)) continue;
 		const name = getCategory(post);
 		if (!map.has(name)) map.set(name, []);
 		map.get(name)!.push(post);
 	}
 
-	return [...map]
+	const books = [...map]
 		.map(([name, list]) => ({
 			name,
 			posts: [...list].sort(
@@ -142,6 +160,22 @@ export function getDocBooks(posts: Post[]): DocBook[] {
 			),
 		}))
 		.sort((a, b) => b.posts.length - a.posts.length || a.name.localeCompare(b.name, 'zh'));
+
+	// 当前内容模型只支持一个文档集；多出来的书没有入口，早点报错好过静默漏掉。
+	if (books.length > 1) {
+		throw new Error(
+			`当前只支持一个文档集，但发现 ${books.length} 个：${books
+				.map((book) => book.name)
+				.join('、')}。请把所有 articleLayout: doc 的文章放到 ${DOC_CATEGORY}/ 下。`,
+		);
+	}
+	if (books[0] && books[0].name !== DOC_CATEGORY) {
+		throw new Error(
+			`文档必须放在 src/content/blog/${DOC_CATEGORY}/ 下，当前文档集是「${books[0].name}」。`,
+		);
+	}
+
+	return books;
 }
 
 /** 文档集总入口路径 */
@@ -151,7 +185,11 @@ export function bookHref(book: string): string {
 
 /** 文档集卡片的链接：直达第一篇文档，左侧目录会以第一篇为当前项 */
 export function docBookHref(book: DocBook): string {
-	return postHref(book.posts[0]);
+	const first = book.posts[0];
+	if (!first) {
+		throw new Error(`文档集「${book.name}」没有任何文档，无法生成入口链接。`);
+	}
+	return postHref(first);
 }
 
 /** 时间轴左侧的月份名 */

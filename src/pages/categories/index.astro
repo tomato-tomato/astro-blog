@@ -11,120 +11,64 @@
  * 文章里的分类徽章仍然链到 /categories/<分类>，那条路径不变。
  * 这里选中某个分类时不跳转，只改 ?c=，方便分享与刷新后保持选中。
  */
-import BaseHead from '../../components/BaseHead.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PostCard from '../../components/PostCard.astro';
 import DocOverviewCard from '../../components/DocOverviewCard.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getCategory, getDocBooks, getDocsOverview, getPosts, groupByCategory } from '../../lib/posts';
+import { getCategoryIndexView } from '../../lib/category-view';
+import { DOC_CATEGORY, getCategory } from '../../lib/posts';
 
-const posts = await getPosts();
-const articles = posts.filter((post) => post.data.articleLayout !== 'doc');
-const docBook = getDocBooks(posts)[0];
-const overview = docBook ? await getDocsOverview() : undefined;
-const categories = groupByCategory(posts);
-const total = posts.length;
+const { categories, total, articles, docEntry } = await getCategoryIndexView();
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={`分类 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<PageHeader title="分类" meta={`共 ${categories.length} 个分类 · ${total} 篇文章`} />
+<BaseLayout title={`分类 | ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+	<main>
+		<PageHeader title="分类" meta={`共 ${categories.length} 个分类 · ${total} 篇文章`} />
 
-			{
-				categories.length > 0 ? (
-					<>
-						<div class="filter" role="group" aria-label="按分类筛选" data-filter>
-							<button class="chip" type="button" data-category="" aria-pressed="true">
-								全部
-								<span class="chip-count">{total}</span>
+		{
+			categories.length > 0 ? (
+				<>
+					<div class="filter" role="group" aria-label="按分类筛选" data-filter>
+						<button class="chip" type="button" data-category="" aria-pressed="true">
+							全部
+							<span class="chip-count">{total}</span>
+						</button>
+						{categories.map((c) => (
+							<button class="chip" type="button" data-category={c.name} aria-pressed="false">
+								{c.name}
+								<span class="chip-count">{c.count}</span>
 							</button>
-							{categories.map((c) => (
-								<button class="chip" type="button" data-category={c.name} aria-pressed="false">
-									{c.name}
-									<span class="chip-count">{c.count}</span>
-								</button>
-							))}
-						</div>
+						))}
+					</div>
 
-						<ul class="post-grid" data-post-list>
-							{
-								docBook && overview && (
-									<li data-category="文档">
-										<DocOverviewCard overview={overview} book={docBook} />
-									</li>
-								)
-							}
-							{
-								articles.map((post) => (
-									<li data-category={getCategory(post)}>
-										<PostCard post={post} />
-									</li>
-								))
-							}
-						</ul>
+					<ul class="post-grid" data-post-list>
+						{
+							docEntry && (
+								<li data-category={DOC_CATEGORY}>
+									<DocOverviewCard overview={docEntry.overview} book={docEntry.book} />
+								</li>
+							)
+						}
+						{
+							articles.map((post) => (
+								<li data-category={getCategory(post)}>
+									<PostCard post={post} />
+								</li>
+							))
+						}
+					</ul>
 
-						<p class="filter-empty" data-filter-empty hidden>
-							这个分类下还没有文章。
-						</p>
-					</>
-				) : (
-					<p>还没有分类。</p>
-				)
-			}
-		</main>
-		<Footer />
-	</body>
-</html>
-
-<script>
-	const root = document.querySelector<HTMLElement>('[data-filter]');
-
-	if (root) {
-		const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('.chip'));
-		const items = Array.from(document.querySelectorAll<HTMLLIElement>('[data-post-list] > li'));
-		const empty = document.querySelector<HTMLElement>('[data-filter-empty]');
-
-		const apply = (category: string) => {
-			let shown = 0;
-
-			for (const chip of chips) {
-				chip.setAttribute('aria-pressed', String(chip.dataset.category === category));
-			}
-
-			for (const li of items) {
-				const match = !category || li.dataset.category === category;
-				li.hidden = !match;
-				if (match) shown++;
-			}
-
-			if (empty) empty.hidden = shown > 0;
-
-			// 只改查询串，不产生历史记录
-			const url = new URL(window.location.href);
-			if (category) url.searchParams.set('c', category);
-			else url.searchParams.delete('c');
-			history.replaceState(null, '', url);
-		};
-
-		root.addEventListener('click', (event) => {
-			const chip = (event.target as HTMLElement).closest<HTMLButtonElement>('.chip');
-			if (!chip) return;
-			apply(chip.dataset.category ?? '');
-		});
-
-		// 刷新 / 从外链进来时恢复选中
-		const initial = new URL(window.location.href).searchParams.get('c') ?? '';
-		apply(chips.some((c) => c.dataset.category === initial) ? initial : '');
-	}
-</script>
+					<p class="filter-empty" data-filter-empty hidden>
+						这个分类下还没有文章。
+					</p>
+				</>
+			) : (
+				<p>还没有分类。</p>
+			)
+		}
+	</main>
+</BaseLayout>
 
 <style>
 	.filter {

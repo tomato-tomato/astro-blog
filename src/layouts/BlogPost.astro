@@ -1,6 +1,6 @@
 ---
 /*
- * 文章详情页布局。两种版式，由 frontmatter 的 `layout` 决定：
+ * 文章详情页布局。两种版式，由 frontmatter 的 `articleLayout` 决定：
  *
  *   post（默认）  正文 + 右侧大纲（吸顶，不随页面滚走）
  *   doc          左侧可折叠目录 + 正文 + 右侧大纲
@@ -8,10 +8,8 @@
  * 宽度与页头对齐：main 由 global.css 统一给 max-width: --w-page + padding 1rem，
  * 这里只负责在内部切列。
  */
-import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import type { ImageMetadata } from 'astro';
+import BaseLayout from './BaseLayout.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import CategoryBadge from '../components/CategoryBadge.astro';
 import TagList from '../components/TagList.astro';
@@ -21,9 +19,17 @@ import { buildToc, type Heading } from '../lib/toc';
 import { bookHref, getDocBooks, getPosts } from '../lib/posts';
 import { Image } from 'astro:assets';
 
-// category 由 blog/[...slug].astro 传入（分类从目录推导）；
-// about.astro 复用本布局时不传，所以是可选的。
-type Props = CollectionEntry<'blog'>['data'] & {
+// 只声明布局真正用到的字段，而不是整份 schema：
+// about.astro 复用本布局，不需要 tags / draft / articleLayout 等文章字段。
+type Props = {
+	title: string;
+	description: string;
+	pubDate: Date;
+	updatedDate?: Date;
+	heroImage?: ImageMetadata;
+	tags?: string[];
+	articleLayout?: 'post' | 'doc';
+	/** 分类由 blog/[...slug].astro 传入（从目录推导）；about 不传 */
 	category?: string;
 	headings?: Heading[];
 	/** 当前文章 id，用于在文档目录里标出「你在这里」 */
@@ -52,15 +58,13 @@ const docBooks = articleLayout === 'doc' ? getDocBooks(await getPosts()) : [];
 const book = docBooks.find((b) => b.name === category);
 ---
 
-<html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-	</head>
-
-	<body>
-		{/* 文档阅读页的 URL 在 /blog/ 下，但顶部应高亮「文档」而非「文章」 */}
-		<Header activeHref={articleLayout === 'doc' ? '/docs' : undefined} />
-		<main class="article-shell" data-layout={articleLayout} data-has-toc={hasToc}>
+<BaseLayout
+	title={title}
+	description={description}
+	image={heroImage}
+	activeHref={articleLayout === 'doc' ? '/docs' : undefined}
+>
+	<main class="article-shell" data-layout={articleLayout} data-has-toc={hasToc}>
 			{
 				articleLayout === 'doc' && book && (
 					<DocSidebar
@@ -103,180 +107,8 @@ const book = docBooks.find((b) => b.name === category);
 			</article>
 
 			{hasToc && <ArticleOutline nodes={toc} />}
-		</main>
-		<Footer />
-	</body>
-</html>
-
-<script>
-	/* ---------- 大纲高亮 ----------
-	   找出「已经滚过视口上沿」的最后一个标题，标给对应链接。
-	   文档版式切换文章后会重新 collect() 一次，所以这些状态放在外层变量里。 */
-	let links: HTMLAnchorElement[] = [];
-	let byId = new Map<string, HTMLAnchorElement[]>();
-	let targets: HTMLElement[] = [];
-	let active = '';
-
-	const collect = () => {
-		links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-outline] a[href^="#"]'));
-		byId = new Map();
-		for (const a of links) {
-			const id = decodeURIComponent(a.hash.slice(1));
-			const list = byId.get(id);
-			if (list) list.push(a);
-			else byId.set(id, [a]);
-		}
-		targets = Array.from(byId.keys())
-			.map((id) => document.getElementById(id))
-			.filter((el): el is HTMLElement => Boolean(el));
-		active = '';
-	};
-
-	const update = () => {
-		if (targets.length === 0) return;
-		const line = window.scrollY + 96; // 页头高度 + 一点余量
-		let current = targets[0].id;
-		for (const el of targets) {
-			if (el.getBoundingClientRect().top + window.scrollY <= line) current = el.id;
-			else break;
-		}
-		if (current === active) return;
-		active = current;
-		for (const a of links) a.removeAttribute('data-active');
-		for (const a of byId.get(current) ?? []) a.setAttribute('data-active', '');
-	};
-
-	let ticking = false;
-	const onScroll = () => {
-		if (ticking) return;
-		ticking = true;
-		requestAnimationFrame(() => {
-			ticking = false;
-			update();
-		});
-	};
-
-	window.addEventListener('scroll', onScroll, { passive: true });
-	window.addEventListener('resize', onScroll, { passive: true });
-
-	/* ---------- 窄屏折叠 ----------
-	   大纲 / 文档目录在窄屏会变成文首的折叠块，默认收起，别把正文顶下去。 */
-	const collapseOnNarrow = () => {
-		const narrow = window.matchMedia('(max-width: 900px)').matches;
-		for (const el of document.querySelectorAll<HTMLDetailsElement>(
-			'details.outline, details.doc-nav',
-		)) {
-			el.open = !narrow;
-		}
-	};
-
-	collect();
-	update();
-	collapseOnNarrow();
-	window.matchMedia('(max-width: 900px)').addEventListener('change', collapseOnNarrow);
-
-	/* ---------- 文档版式：左侧点文章，原地换右侧 ----------
-	   不整页跳转：fetch 目标页 → 只替换 .article-main 与 .outline → pushState 同步地址。
-	   这样刷新、分享、前进后退都还是对的那一篇。 */
-	const shell = document.querySelector<HTMLElement>('main.article-shell[data-layout="doc"]');
-
-	if (shell) {
-		const docNav = shell.querySelector<HTMLElement>('.doc-nav');
-		let busy = false;
-
-		const setCurrent = (pathname: string) => {
-			for (const a of shell.querySelectorAll<HTMLAnchorElement>('.doc-nav a')) {
-				if (new URL(a.href).pathname === pathname) a.setAttribute('aria-current', 'page');
-				else a.removeAttribute('aria-current');
-			}
-		};
-
-		const swap = async (href: string, push: boolean) => {
-			if (busy) return;
-			busy = true;
-			shell.dataset.loading = '';
-
-			try {
-				const res = await fetch(href, { headers: { accept: 'text/html' } });
-				if (!res.ok) throw new Error(String(res.status));
-
-				const next = new DOMParser().parseFromString(await res.text(), 'text/html');
-				const nextShell = next.querySelector<HTMLElement>('main.article-shell');
-
-				// 目标不是文档版式（没有左目录）就走正常跳转，别把导航弄丢
-				if (!nextShell || nextShell.dataset.layout !== 'doc') {
-					location.href = href;
-					return;
-				}
-
-				// 跨文档集（换了另一本书）也整页跳，左栏才对得上
-				const curNav = shell.querySelector<HTMLElement>('.doc-nav');
-				const nextNav = nextShell.querySelector<HTMLElement>('.doc-nav');
-				if (!curNav || !nextNav || curNav.dataset.book !== nextNav.dataset.book) {
-					location.href = href;
-					return;
-				}
-
-				const nextArticle = nextShell.querySelector('.article-main');
-				const curArticle = shell.querySelector('.article-main');
-				if (!nextArticle || !curArticle) {
-					location.href = href;
-					return;
-				}
-
-				curArticle.replaceWith(document.importNode(nextArticle, true));
-
-				const curOutline = shell.querySelector('.outline');
-				const nextOutline = nextShell.querySelector('.outline');
-				if (nextOutline) {
-					const node = document.importNode(nextOutline, true);
-					if (curOutline) curOutline.replaceWith(node);
-					else shell.append(node);
-				} else if (curOutline) {
-					curOutline.remove();
-				}
-
-				shell.dataset.hasToc = nextShell.dataset.hasToc ?? 'false';
-				setCurrent(new URL(href, location.href).pathname);
-
-				document.title = next.title;
-				const nextDesc = next.querySelector('meta[name="description"]');
-				const curDesc = document.querySelector('meta[name="description"]');
-				if (nextDesc && curDesc) curDesc.setAttribute('content', nextDesc.getAttribute('content') ?? '');
-
-				if (push) history.pushState({ doc: true }, '', href);
-
-				window.scrollTo({ top: 0 });
-				collect();
-				update();
-				collapseOnNarrow();
-			} catch {
-				location.href = href;
-			} finally {
-				busy = false;
-				delete shell.dataset.loading;
-			}
-		};
-
-		docNav?.addEventListener('click', (event) => {
-			const a = (event.target as HTMLElement).closest<HTMLAnchorElement>('a');
-			if (!a) return;
-			// 新标签页 / 中键 / 带修饰键：交给浏览器
-			if (a.target === '_blank' || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-				return;
-
-			const path = new URL(a.href).pathname;
-			event.preventDefault();
-			if (path === location.pathname) return;
-			void swap(a.getAttribute('href') ?? a.href, true);
-		});
-
-		// 浏览器前进 / 后退
-		window.addEventListener('popstate', () => {
-			void swap(location.pathname, false);
-		});
-	}
-</script>
+	</main>
+</BaseLayout>
 
 <style>
 	/* ---------- 版式网格 ---------- */
