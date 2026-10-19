@@ -1,7 +1,7 @@
 ---
-title: '下载与安装'
-description: '从 GitHub Releases 下载 Lathe 技能包、看清它的目录结构、装到用户级或项目级技能目录，并在四步之内生成第一篇教程。'
-pubDate: 'Oct 19 2026'
+title: "下载与安装"
+description: "从 GitHub Releases 下载 Lathe 技能包、看清它的目录结构、装到用户级或项目级技能目录，并在四步之内生成第一篇教程。"
+pubDate: "Oct 19 2026"
 order: 2
 ---
 
@@ -9,10 +9,10 @@ Lathe 是一个可以直接复制到本地技能目录的文件夹，不需要�
 
 ## 1. 下载技能包
 
-到仓库的 [GitHub Releases](https://github.com/tomato-tomato/my-rust-lathe-courses/releases) 页面，下载最新的 `skills` 压缩包（文件名形如 `lathe-0.5.3.1.zip`，以实际 release 为准），然后解压：
+到仓库的 [GitHub Releases](https://github.com/tomato-tomato/my-rust-lathe-courses/releases) 页面，下载最新的 `skills` 压缩包（文件名形如 `lathe-0.5.3.zip`，以实际 release 为准），然后解压：
 
 ```bash
-unzip lathe-0.5.3.1.zip -d ./skills-download
+unzip lathe-0.5.3.zip -d ./skills-download
 ```
 
 解压后是一个技能文件夹：
@@ -60,10 +60,10 @@ cp -r skills-download/lathe .qoderwork/skills/
 
 不同客户端的技能目录位置：
 
-| 客户端 | 用户级目录 | 项目级目录 |
-| --- | --- | --- |
-| QoderWork / QoderWork CN | `~/.qoderwork/skills/` | `.qoderwork/skills/` |
-| Reasonix | `~/.reasonix/skills/` | `.reasonix/skills/` 或 `.claude/skills/` |
+| 客户端                   | 用户级目录             | 项目级目录                               |
+| ------------------------ | ---------------------- | ---------------------------------------- |
+| QoderWork / QoderWork CN | `~/.qoderwork/skills/` | `.qoderwork/skills/`                     |
+| Reasonix                 | `~/.reasonix/skills/`  | `.reasonix/skills/` 或 `.claude/skills/` |
 
 > 用户级安装的好处是：教程数据本来就和客户端无关（存在 `~/.lathe/` 下），装一次之后在哪个项目、哪个客户端里都能接着同一门课往下学。
 
