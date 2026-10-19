@@ -22,15 +22,16 @@ interface Props {
 }
 
 const { bookName, nav, currentId, homeHref } = Astro.props;
+// 显示名统一取 nav.title（文档册显示名），data-book 仍保留册目录名作为机器标识
 ---
 
 {
 	nav.items.length > 0 && (
 		<details class="doc-nav doc-sidebar" open data-book={bookName} data-doc-sidebar>
-			<summary class="doc-nav-summary">{bookName} · 目录</summary>
-			<nav class="doc-nav-body" aria-label={`${bookName} · 目录`}>
+			<summary class="doc-nav-summary">{nav.title} · 目录</summary>
+			<nav class="doc-nav-body" aria-label={`${nav.title} · 目录`}>
 				<a class="doc-nav-home" href={homeHref}>
-					<span aria-hidden="true">←</span> {bookName} · 总览
+					<span aria-hidden="true">←</span> {nav.title} · 总览
 				</a>
 				<p class="doc-nav-title">{nav.title}</p>
 				<DocNavTree nodes={nav.items} currentId={currentId} />

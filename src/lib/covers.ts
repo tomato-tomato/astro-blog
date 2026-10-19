@@ -3,7 +3,7 @@
  *
  * 命名规则（前后端两边必须一致，改一边等于全站换图）：
  *   文件名 = FNV-1a(key) 的 8 位十六进制 + `.webp`
- *   key：文章 / 文档 = 内容 id（如 `笔记/first-post`）；文档册 = `book:<册名>`；站点 = `@site`
+ *   key：文章 / 文档 = 内容 id（如 `前端构建/astro-5-upgrade-to-7`）；文档册 = `book:<册名>`；站点 = `@site`
  *
  * 优先级：frontmatter 里作者手写的 heroImage > 生成封面 > 没有封面。
  * 生成图由 prebuild / predev 产出；万一某张还没生成（比如刚 `git clone` 就直接跑 dev），

@@ -46,7 +46,7 @@ export async function getAllDocs(): Promise<Doc[]> {
 	return docs.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
-/** 文档 id 的第一段就是文档册的名字：`文档/markdown-style-guide` → `文档` */
+/** 文档 id 的第一段就是文档册的名字：`lathe/overview` → `lathe`（已被 glob loader 规范化为小写） */
 export function getDocBookName(doc: Doc): string {
 	const slash = doc.id.indexOf('/');
 	if (slash === -1) {

@@ -3,14 +3,14 @@
  *
  * 配置放在 src/content/docs/<文档册>/_nav.yaml，和文档正文、册级元数据放在一起：
  *
- *   title: 文档目录              # 顶部总标题，纯文本，不参与折叠
+ *   title: Lathe 技能            # 顶部总标题，纯文本，不参与折叠
  *   items:
- *     - label: 内容写作          # 纯文本分组，有 children 时可折叠
+ *     - label: 日常操作          # 纯文本分组，有 children 时可折叠
  *       children:
- *         - label: Markdown 语法 # 分组可以继续套分组
+ *         - label: 生成与精进    # 分组可以继续套分组
  *           children:
- *             - label: 语法指南  # 链接节点，label 与文档标题解耦
- *               doc: markdown-style-guide
+ *             - label: 生成第一部分  # 链接节点，label 与文档标题解耦
+ *               doc: generate
  *
  * 节点语义（隐式判别，不写 type）：
  *   - 有 doc：可点击的文档入口，不能带 children；
@@ -32,7 +32,7 @@ export interface NavConfig {
 /** src/content/docs/<文档册>/_nav.yaml 里的节点形状 */
 export interface NavConfigNode {
 	label: string;
-	/** 文档 id 去掉「文档册名/」后的部分；例如 文档/markdown-style-guide → markdown-style-guide */
+	/** 文档 id 去掉「文档册名/」后的部分；例如 lathe/overview → overview */
 	doc?: string;
 	/** 子节点；与 doc 互斥 */
 	children?: NavConfigNode[];
@@ -122,6 +122,8 @@ export function resolveDocNav(
 		);
 	}
 
-	const title = config.title?.trim() || `${bookName} · 目录`;
+	// title 是文档册的显示名；没写就用册目录名。
+	// 「· 目录」「· 总览」这类后缀由 DocSidebar 拼接，这里保持纯名称。
+	const title = config.title?.trim() || bookName;
 	return { title, items };
 }

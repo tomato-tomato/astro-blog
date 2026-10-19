@@ -1,0 +1,48 @@
+# 文档册左栏目录。label 是显示文字，与文档标题解耦；doc 是册内文件名（不含扩展名）。
+# 三种节点：链接（doc）、可折叠分组（children）、纯展示文本（两者都没有）。
+# 构建期会校验：每个已发布文档必须恰好出现一次，未知 / 重复 / 漏配都会直接报错。
+title: Lathe 技能
+
+items:
+  - label: 开始使用
+    children:
+      - label: Lathe 是什么
+        doc: overview
+      - label: 下载与安装
+        doc: install
+      - label: 教程存在哪里
+        doc: storage
+
+  - label: 日常操作
+    children:
+      - label: 生成与精进
+        children:
+          - label: 生成第一部分
+            doc: generate
+          - label: 续写与收尾
+            doc: extend
+          - label: 验证教程可用
+            doc: verify
+          - label: 就教程内容提问
+            doc: ask
+
+      - label: 学完之后
+        children:
+          - label: 复习材料
+            doc: review
+          - label: 面试要点文档
+            doc: interview
+          - label: 标签与自定义语气
+            doc: tags-and-voice
+
+  - label: 管理与参考
+    children:
+      - label: 找回与列出教程
+        doc: scan-and-list
+      - label: 完整工作流示例
+        doc: workflow
+      - label: 教程文件结构
+        doc: file-structure
+      - label: 常见问题
+        doc: faq
+      - label: 本指南对应技能版本 v0.5.3.1

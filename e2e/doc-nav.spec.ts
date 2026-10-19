@@ -62,7 +62,8 @@ test('目录配置组装成多级树，总标题与展示文字都可自定义',
 
 test('不写 title 时回退到册名', () => {
 	const nav = resolveDocNav('册', { items: [{ label: 'A', doc: 'a' }] }, [makeDoc('册/a', 'A')]);
-	expect(nav.title).toBe('册 · 目录');
+	// title 只放纯显示名，「· 目录」等后缀由 DocSidebar 拼接
+	expect(nav.title).toBe('册');
 });
 
 test('未知引用、重复引用、链接带子节点都会被拒绝', () => {

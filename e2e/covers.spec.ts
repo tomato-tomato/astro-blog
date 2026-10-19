@@ -32,10 +32,12 @@ test('文章与文档卡片都有封面，且每张内容各自一张', async ({
 test('文章正文头图与卡片用的是同一张生成图', async ({ page }) => {
 	await page.goto('/blog/');
 	const cardSrc = await page
-		.locator('.content-card-link[href="/blog/笔记/third-post/"] .content-card-media img')
+		.locator(
+			'.content-card-link[href="/blog/后端工程/nestjs-module-four-params/"] .content-card-media img',
+		)
 		.getAttribute('src');
 
-	await page.goto('/blog/笔记/third-post/');
+	await page.goto('/blog/后端工程/nestjs-module-four-params/');
 	await expectSquareCover(page.locator('.hero-image img'));
 	const heroSrc = await page.locator('.hero-image img').getAttribute('src');
 	// 文件名里的内容哈希部分要一致（查询串与优化尺寸可以不同）
@@ -46,12 +48,12 @@ test('文档册卡片用册级固定封面', async ({ page }) => {
 	await page.goto('/docs/');
 	await expectSquareCover(page.locator('.book-card-media img').first());
 
-	await page.goto('/docs/文档/markdown-style-guide/');
+	await page.goto('/docs/lathe/overview/');
 	await expectSquareCover(page.locator('.hero-image img'));
 });
 
 test('og:image：内容页用生成封面，固定页退回站点社交图', async ({ page }) => {
-	await page.goto('/blog/笔记/third-post/');
+	await page.goto('/blog/后端工程/nestjs-module-four-params/');
 	await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
 		'content',
 		/\/_astro\/[0-9a-f]{8}\..*\.webp$/,

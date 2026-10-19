@@ -22,13 +22,13 @@ test('列表与聚合页使用整页背景，且不拦截指针', async ({ page 
 		.poll(() => grid.evaluate((el) => el.style.getPropertyValue('--backdrop-pointer-x')))
 		.not.toBe('');
 
-	await page.goto('/categories/笔记/');
+	await page.goto('/categories/前端构建/');
 	await expect(page.locator('[data-page-backdrop="sweep"]')).toHaveCount(1);
 
 	await page.goto('/tags/');
 	await expect(page.locator('[data-page-backdrop="dots"]')).toHaveCount(1);
 
-	await page.goto('/docs/文档/');
+	await page.goto('/docs/lathe/');
 	await expect(page.locator('[data-page-backdrop="dots"]')).toHaveCount(1);
 
 	await page.goto('/docs/');
@@ -36,7 +36,7 @@ test('列表与聚合页使用整页背景，且不拦截指针', async ({ page 
 });
 
 test('阅读页使用静态纸纹，时间轴有主线光晕', async ({ page }) => {
-	await page.goto('/blog/笔记/third-post/');
+	await page.goto('/blog/后端工程/nestjs-module-four-params/');
 
 	const paper = page.locator('[data-page-backdrop="paper"]');
 	await expect(paper).toHaveCount(1);
@@ -52,7 +52,7 @@ test('阅读页使用静态纸纹，时间轴有主线光晕', async ({ page }) 
 	expect(grainStyle.image).toContain('svg');
 	expect(grainStyle.opacity).toBeGreaterThanOrEqual(0.06);
 
-	await page.goto('/docs/文档/markdown-style-guide/');
+	await page.goto('/docs/lathe/overview/');
 	await expect(page.locator('[data-page-backdrop="paper"]')).toHaveCount(1);
 
 	await page.goto('/about/');

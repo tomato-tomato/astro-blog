@@ -9,55 +9,61 @@ test('文档入口直达首篇，左栏原地换页并同步元信息', async ({
 
 	const bookCard = page.locator('.book-card');
 	await expect(bookCard).toHaveCount(1);
-	await expect(bookCard).toHaveAttribute('href', '/docs/文档/markdown-style-guide/');
-	// 卡片描述只用 books 元数据，不再罗列册内每篇文档的摘要
+	await expect(bookCard).toHaveAttribute('href', '/docs/lathe/overview/');
+	await expect(bookCard.locator('.book-card-title')).toHaveText('Lathe 技能使用指南');
+	await expect(bookCard.locator('.book-card-count')).toHaveText('14 篇');
+	// 卡片描述只用 books 元数据，不罗列册内每篇文档的摘要
 	await expect(bookCard.locator('.book-card-summary')).toHaveCount(0);
-	await expect(bookCard.locator('.book-card-desc')).toHaveText(
-		'按章节顺序整理的项目文档，涵盖 Markdown 写作规范与 MDX 用法，方便系统阅读。',
-	);
+	await expect(bookCard.locator('.book-card-desc')).toContainText('把 /lathe 的十个操作一次讲清');
 	await bookCard.click();
 
-	await expect(page).toHaveURL(/\/docs\/.*markdown-style-guide\/$/);
+	await expect(page).toHaveURL(/\/docs\/lathe\/overview\/$/);
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');
 	await expect(page.locator('.article-updated')).toContainText('最后修改于');
 	await expect(page.locator('.doc-nav')).toHaveCount(1);
 	// 左栏文字来自 nav 配置，与文档标题解耦
-	await expect(page.locator('.doc-nav a[aria-current="page"]')).toContainText('语法指南');
+	await expect(page.locator('.doc-nav a[aria-current="page"]')).toContainText('Lathe 是什么');
 	await expect(page.locator('.outline a')).not.toHaveCount(0);
 
 	const firstCanonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-	expect(firstCanonical).toContain('markdown-style-guide');
+	expect(firstCanonical).toContain('/docs/lathe/overview/');
 
-	await page.locator('.doc-nav a', { hasText: '使用 MDX' }).click();
-	await expect(page).toHaveURL(/\/docs\/.*using-mdx\/$/);
-	await expect(page.locator('.article-title')).toHaveText('Using MDX');
+	await page.locator('.doc-nav a', { hasText: '下载与安装' }).click();
+	await expect(page).toHaveURL(/\/docs\/lathe\/install\/$/);
+	await expect(page.locator('.article-title')).toHaveText('下载与安装');
 	await expect(page.locator('.article-updated')).toContainText('最后修改于');
-	await expect(page.locator('.doc-nav a[aria-current="page"]')).toContainText('使用 MDX');
+	await expect(page.locator('.doc-nav a[aria-current="page"]')).toContainText('下载与安装');
 	await expect(page.locator('.outline a')).not.toHaveCount(0);
 
 	const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-	expect(canonical).toContain('using-mdx');
+	expect(canonical).toContain('/docs/lathe/install/');
 	expect(canonical).not.toBe(firstCanonical);
-	await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', /using-mdx/);
-	await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Using MDX');
+	await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
+		'content',
+		/\/docs\/lathe\/install\/$/,
+	);
+	await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+		'content',
+		'下载与安装',
+	);
 	await expect(page.locator('meta[property="twitter:title"]')).toHaveAttribute(
 		'content',
-		'Using MDX',
+		'下载与安装',
 	);
 
 	await page.goBack();
-	await expect(page).toHaveURL(/\/docs\/.*markdown-style-guide\/$/);
-	await expect(page.locator('.article-title')).toHaveText('Markdown Style Guide');
+	await expect(page).toHaveURL(/\/docs\/lathe\/overview\/$/);
+	await expect(page.locator('.article-title')).toHaveText('Lathe 是什么');
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');
 
 	expect(errors).toEqual([]);
 });
 
-test('左栏按 nav 配置渲染多级目录，并可逐级收起 / 展开', async ({ page }) => {
-	await page.goto('/docs/文档/markdown-style-guide/');
+test('左栏按 nav 配置渲染三级目录，并可逐级收起 / 展开', async ({ page }) => {
+	await page.goto('/docs/lathe/overview/');
 
 	// 顶部总标题：取文档册总标题，纯文本，不是可折叠节点
-	await expect(page.locator('.doc-nav-title')).toHaveText('文档');
+	await expect(page.locator('.doc-nav-title')).toHaveText('Lathe 技能');
 	await expect(page.locator('.doc-nav-title details, .doc-nav-title summary')).toHaveCount(0);
 	// 「总览」在标题上方
 	const order = await page
@@ -65,60 +71,67 @@ test('左栏按 nav 配置渲染多级目录，并可逐级收起 / 展开', asy
 		.evaluateAll((els) => els.map((el) => el.className.split(' ')[0]));
 	expect(order.slice(0, 3)).toEqual(['doc-nav-home', 'doc-nav-title', 'doc-tree']);
 
+	// 可折叠分组：开始使用 / 日常操作 / 生成与精进 / 学完之后 / 管理与参考
 	const groups = page.locator('.doc-group');
-	await expect(groups).toHaveCount(4);
-	const topGroup = groups.nth(0);
-	const markdownGroup = groups.nth(1);
-	await expect(topGroup.locator(':scope > summary')).toContainText('内容写作');
-	await expect(markdownGroup.locator(':scope > summary')).toContainText('Markdown 语法');
-	await expect(groups.nth(2).locator(':scope > summary')).toContainText('MDX 介绍');
+	await expect(groups).toHaveCount(5);
+	// 其中两个是「日常操作」的子分组，所以树里存在第三层
+	await expect(page.locator('.doc-group .doc-group')).toHaveCount(2);
 
-	const links = topGroup.locator('.doc-link');
-	await expect(links).toHaveCount(2);
+	// 只匹配「这一层自己」的分组：summary 必须是它的直接子节点
+	const groupLabeled = (label: string) =>
+		page.locator(`.doc-group:has(> .doc-group-summary .doc-group-label:text-is("${label}"))`);
+
+	const topGroup = groupLabeled('开始使用');
+	await expect(topGroup.locator(':scope > summary')).toContainText('开始使用');
+	await expect(topGroup.locator('.doc-link')).toHaveCount(3);
 	// 目录 label 与文档标题解耦；完整文本走 data-tooltip，不再挂原生 title
-	await expect(links.nth(0)).toContainText('语法指南');
-	await expect(links.nth(0).locator('.doc-label')).toHaveAttribute('data-tooltip', '语法指南');
-	await expect(links.nth(1)).toContainText('使用 MDX');
-	await expect(links.nth(1).locator('.doc-label')).toHaveAttribute('data-tooltip', '使用 MDX');
+	await expect(topGroup.locator('.doc-link').first().locator('.doc-label')).toHaveText(
+		'Lathe 是什么',
+	);
+	await expect(topGroup.locator('.doc-link').first().locator('.doc-label')).toHaveAttribute(
+		'data-tooltip',
+		'Lathe 是什么',
+	);
 
-	// 纯文本节点与链接一样携带完整文本，供截断后提示
-	const textNodes = groups.nth(3).locator('.doc-text');
-	await expect(textNodes).toHaveCount(2);
-	await expect(textNodes.first()).toHaveAttribute('data-tooltip', /.+/);
+	// 纯文本节点（版本说明）与链接一样携带完整文本，供截断后提示
+	const textNodes = page.locator('.doc-text');
+	await expect(textNodes).toHaveCount(1);
+	await expect(textNodes.first()).toHaveAttribute('data-tooltip', /v0\.5\.3\.1/);
 
-	const isOpen = (group: typeof topGroup) =>
+	const daily = groupLabeled('日常操作');
+	const generate = groupLabeled('生成与精进');
+	const review = groupLabeled('学完之后');
+	const isOpen = (group: ReturnType<typeof groupLabeled>) =>
 		group.evaluate((el) => (el as HTMLDetailsElement).open);
 
-	// 第一层收起：整棵子树隐藏
-	expect(await isOpen(topGroup)).toBe(true);
-	await topGroup.locator(':scope > summary').click();
-	expect(await isOpen(topGroup)).toBe(false);
-	await expect(links.first()).toBeHidden();
-	await topGroup.locator(':scope > summary').click();
-	expect(await isOpen(topGroup)).toBe(true);
-	await expect(links.first()).toBeVisible();
+	// 第二层收起：整支子树（含两个子分组）隐藏
+	expect(await isOpen(daily)).toBe(true);
+	await daily.locator(':scope > summary').click();
+	expect(await isOpen(daily)).toBe(false);
+	await expect(page.locator('.doc-link', { hasText: '续写与收尾' })).toBeHidden();
+	await daily.locator(':scope > summary').click();
+	expect(await isOpen(daily)).toBe(true);
+	await expect(page.locator('.doc-link', { hasText: '续写与收尾' })).toBeVisible();
 
-	// 第二层收起：只隐藏这一支，另一支仍然可见
-	expect(await isOpen(markdownGroup)).toBe(true);
-	await markdownGroup.locator(':scope > summary').click();
-	expect(await isOpen(markdownGroup)).toBe(false);
-	await expect(links.nth(0)).toBeHidden();
-	await expect(links.nth(1)).toBeVisible();
-
-	await markdownGroup.locator(':scope > summary').click();
-	expect(await isOpen(markdownGroup)).toBe(true);
-	await expect(links.nth(0)).toBeVisible();
+	// 第三层收起：只影响这一支，兄弟子分组仍在
+	expect(await isOpen(generate)).toBe(true);
+	await generate.locator(':scope > summary').click();
+	expect(await isOpen(generate)).toBe(false);
+	await expect(page.locator('.doc-link', { hasText: '验证教程可用' })).toBeHidden();
+	await expect(review.locator(':scope > summary')).toBeVisible();
+	await expect(page.locator('.doc-link', { hasText: '复习材料' })).toBeVisible();
+	await generate.locator(':scope > summary').click();
+	expect(await isOpen(generate)).toBe(true);
 });
 
 test('文档册目录页按 order 列出文档', async ({ page }) => {
-	await page.goto('/docs/文档/');
+	await page.goto('/docs/lathe/');
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');
-	await expect(page.locator('.doc-index-title')).toHaveText([
-		'Markdown Style Guide',
-		'Using MDX',
-	]);
+	await expect(page.locator('.doc-index-title')).toHaveCount(14);
+	await expect(page.locator('.doc-index-title').first()).toHaveText('Lathe 是什么');
+	await expect(page.locator('.doc-index-title').nth(1)).toHaveText('下载与安装');
 	await expect(page.locator('.doc-index a').first()).toHaveAttribute(
 		'href',
-		'/docs/文档/markdown-style-guide/',
+		'/docs/lathe/overview/',
 	);
 });

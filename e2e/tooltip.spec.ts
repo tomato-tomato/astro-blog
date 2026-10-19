@@ -4,7 +4,11 @@ test('长文本 hover 立即出现全局提示，未截断不弹', async ({ page
 	await page.goto('/blog/');
 
 	const title = page.locator('.content-card-title').first();
-	// 未截断：不应创建提示浮层
+	// 先换成一个不可能截断的短标题：未溢出时不应创建提示浮层
+	await title.evaluate((el) => {
+		el.textContent = '短标题';
+		el.setAttribute('data-tooltip', '短标题');
+	});
 	await title.hover();
 	await expect(page.locator('.ui-tooltip')).toHaveCount(0);
 
@@ -24,7 +28,7 @@ test('长文本 hover 立即出现全局提示，未截断不弹', async ({ page
 });
 
 test('左栏层级用字号 / 颜色区分，长标题两行截断后走提示', async ({ page }) => {
-	await page.goto('/docs/文档/markdown-style-guide/');
+	await page.goto('/docs/lathe/overview/');
 
 	// 不再给左栏元素挂原生 title
 	await expect(page.locator('.doc-nav [title]')).toHaveCount(0);
@@ -35,8 +39,9 @@ test('左栏层级用字号 / 颜色区分，长标题两行截断后走提示',
 			return { size: Number.parseFloat(cs.fontSize), color: cs.color };
 		});
 
+	// 目录顺序：开始使用(0) 日常操作(1) 生成与精进(2)…——0 是第一层，2 是它的子分组
 	const top = await styleOf(0);
-	const nested = await styleOf(1);
+	const nested = await styleOf(2);
 	expect(top.size).toBeGreaterThan(nested.size);
 	expect(top.color).not.toBe(nested.color);
 
@@ -54,7 +59,7 @@ test('左栏层级用字号 / 颜色区分，长标题两行截断后走提示',
 });
 
 test('左栏纯文本节点同样两行截断并支持即时提示', async ({ page }) => {
-	await page.goto('/docs/文档/markdown-style-guide/');
+	await page.goto('/docs/lathe/overview/');
 
 	const text = page.locator('.doc-text').first();
 	await expect(text).toHaveCSS('-webkit-line-clamp', '2');
