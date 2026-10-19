@@ -1,10 +1,11 @@
 /**
  * 内容查询的唯一入口。
  *
- * 三种内容：
- *   - 文章：src/content/blog/<分类>/<文章>.md，blog 集合；
- *   - 文档：src/content/docs/<文档册>/<篇>.md，docs 集合；
- *   - 文档册：src/content/books/<文档册>.md，books 集合，只存册级展示信息。
+ * 内容层（文档册相关的三份内容都在同一个目录下）：
+ *   - 文章：  src/content/blog/<分类>/<文章>.md，blog 集合；
+ *   - 文档：  src/content/docs/<文档册>/<篇>.md，docs 集合；
+ *   - 册元数据：src/content/docs/<文档册>/_book.md，books 集合，只存册级展示信息；
+ *   - 左栏目录：src/content/docs/<文档册>/_nav.yaml，nav 集合，定义层级树。
  *
  * 约定：
  *   - 文章分类 = 目录；文档所属文档册 = 文档 id 的第一段。
@@ -16,16 +17,18 @@
  * 否则容易漏掉 draft 过滤或排序。
  */
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { resolveDocNav, type DocNav } from './doc-nav';
 
 export type Article = CollectionEntry<'blog'>;
 export type Doc = CollectionEntry<'docs'>;
 export type Book = CollectionEntry<'books'>;
 
-/** 一册文档：册名 + 册级元数据 + 册内已发布文档（已按 order 排好） */
+/** 一册文档：册名 + 册级元数据 + 册内已发布文档（已按 order 排好）+ 左栏目录 */
 export type DocBook = {
 	name: string;
 	meta: Book;
 	docs: Doc[];
+	nav: DocNav;
 };
 
 export type CategoryGroup = { name: string; posts: Article[]; count: number };
@@ -65,28 +68,31 @@ function groupDocs(docs: Doc[]): Map<string, Doc[]> {
 }
 
 /**
- * 全部文档册：按文档册分组，并关联 books 集合里的册级元数据。
+ * 全部文档册：按文档册分组，关联 books 集合里的册级元数据与 nav 集合里的目录树。
  *
  * 构建期校验：
- *   - 有文档目录就必须有对应的 books/<文档册>.md；
- *   - 有册级元数据就必须有对应的文档目录；
- *   - 每册至少有一篇已发布文档，否则不会出现在 /docs/。
+ *   - 有文档目录就必须有对应的 books/<文档册>.md 与 nav/<文档册>.yaml；
+ *   - 有册级元数据 / 目录配置就必须有对应的文档目录；
+ *   - 每册至少有一篇已发布文档，否则不会出现在 /docs/；
+ *   - 目录配置必须恰好覆盖册内全部已发布文档（见 resolveDocNav）。
  */
 export async function getDocBooks(): Promise<DocBook[]> {
-	const [allDocs, metas] = await Promise.all([
+	const [allDocs, metas, navs] = await Promise.all([
 		getCollection('docs'),
 		getCollection('books'),
+		getCollection('nav'),
 	]);
 
 	const allGroups = groupDocs(allDocs);
 	const publishedGroups = groupDocs(allDocs.filter((doc) => !doc.data.draft));
 	const metaById = new Map(metas.map((meta) => [meta.id, meta]));
+	const navById = new Map(navs.map((nav) => [nav.id, nav]));
 
 	const missingMeta = [...allGroups.keys()].filter((name) => !metaById.has(name));
 	if (missingMeta.length > 0) {
 		throw new Error(
 			`文档册缺少册级元数据：${missingMeta.join('、')}。` +
-				`请创建 ${missingMeta.map((name) => `src/content/books/${name}.md`).join('、')}。`,
+				`请创建 ${missingMeta.map((name) => `src/content/docs/${name}/_book.md`).join('、')}。`,
 		);
 	}
 
@@ -94,18 +100,40 @@ export async function getDocBooks(): Promise<DocBook[]> {
 	if (orphanMeta.length > 0) {
 		throw new Error(
 			`册级元数据没有对应的文档目录：${orphanMeta.map((meta) => meta.id).join('、')}。` +
-				`请在 src/content/docs/<文档册>/ 下添加文档，或删除多余的 books 文件。`,
+				`请在 src/content/docs/<文档册>/ 下添加文档，或删除多余的 _book.md。`,
+		);
+	}
+
+	const missingNav = [...publishedGroups.keys()].filter((name) => !navById.has(name));
+	if (missingNav.length > 0) {
+		throw new Error(
+			`文档册缺少左侧目录配置：${missingNav.join('、')}。` +
+				`请创建 ${missingNav.map((name) => `src/content/docs/${name}/_nav.yaml`).join('、')}。`,
+		);
+	}
+
+	const orphanNav = navs.filter((nav) => !allGroups.has(nav.id));
+	if (orphanNav.length > 0) {
+		throw new Error(
+			`左侧目录配置没有对应的文档目录：${orphanNav.map((nav) => nav.id).join('、')}。` +
+				`请添加对应的 src/content/docs/<文档册>/，或删除多余的 _nav.yaml。`,
 		);
 	}
 
 	return [...publishedGroups]
-		.map(([name, docs]) => ({
-			name,
-			meta: metaById.get(name)!,
-			docs: [...docs].sort(
-				(a, b) => a.data.order - b.data.order || a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
-			),
-		}))
+		.map(([name, docs]) => {
+			const sortedDocs = [...docs].sort(
+				(a, b) =>
+					a.data.order - b.data.order || a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
+			);
+
+			return {
+				name,
+				meta: metaById.get(name)!,
+				docs: sortedDocs,
+				nav: resolveDocNav(name, navById.get(name)!.data, sortedDocs),
+			};
+		})
 		.sort(
 			(a, b) => a.meta.data.order - b.meta.data.order || a.name.localeCompare(b.name, 'zh'),
 		);

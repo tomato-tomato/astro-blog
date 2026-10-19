@@ -39,7 +39,7 @@ const hasToc = toc.length > 0;
 	<main class="article-shell" data-layout="doc" data-has-toc={hasToc}>
 		<DocSidebar
 			bookName={book.name}
-			pages={book.docs}
+			nav={book.nav}
 			currentId={doc.id}
 			homeHref={bookHref(book.name)}
 		/>

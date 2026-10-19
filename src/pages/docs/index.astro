@@ -2,7 +2,7 @@
 /*
  * 全部文档册：/docs/
  *
- * 一册文档 = src/content/docs/<文档册>/ + src/content/books/<文档册>.md。
+ * 一册文档 = src/content/docs/<文档册>/ 下的正文 + _book.md + _nav.yaml。
  * 卡片只展示 books 元数据里的标题、封面和简介，不再罗列册内每篇文档的摘要；
  * 整卡直达第一篇文档，完整目录在 /docs/<文档册>/，从文档页左栏的「总览」进入。
  */
@@ -49,7 +49,7 @@ const pageDescription = books.length === 1 ? books[0].meta.data.description : SI
 											<span class="book-card-count">{book.docs.length} 篇</span>
 										</div>
 										{description && (
-											<p class="book-card-desc" title={description}>
+											<p class="book-card-desc">
 												{description}
 											</p>
 										)}
@@ -61,8 +61,8 @@ const pageDescription = books.length === 1 ? books[0].meta.data.description : SI
 				</ul>
 			) : (
 				<p>
-					还没有文档册。在 <code>src/content/docs/&lt;文档册&gt;/</code> 添加文档，并在
-					<code>src/content/books/&lt;文档册&gt;.md</code> 添加文档册元数据即可。
+					还没有文档册。在 <code>src/content/docs/&lt;文档册&gt;/</code> 添加文档，并补上
+					<code>_book.md</code>（册元数据）与 <code>_nav.yaml</code>（左栏目录）即可。
 				</p>
 			)
 		}

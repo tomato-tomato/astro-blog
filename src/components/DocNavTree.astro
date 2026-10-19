@@ -1,0 +1,242 @@
+---
+/*
+ * 文档册左栏的递归树。
+ *
+ * 节点形态由 src/lib/doc-nav.ts 判别好：
+ *   - doc：可点击的文档入口，label 与文档标题解耦；
+ *   - text：纯文本；有 children 时是 <details> 分组，没有 children 时仅展示。
+ *
+ * 层级用「缩进 + 字号 + 颜色」共同表达：depth 0 最大最深，越往下越小越浅。
+ * 标题最多两行；超出的部分 hover 时用全局 data-tooltip 立即显示全文
+ * （见 src/scripts/tooltip.ts），不再使用原生 title。
+ */
+import { docHref } from '../lib/posts';
+import type { DocNavNode } from '../lib/doc-nav';
+import DocNavTree from './DocNavTree.astro';
+
+interface Props {
+	nodes: DocNavNode[];
+	currentId: string;
+	/** 0 = 顶层；只服务样式分层 */
+	depth?: number;
+}
+
+const { nodes, currentId, depth = 0 } = Astro.props;
+
+/** 只区分到第 4 层，更深的层级沿用最深一档样式 */
+const depthKey = Math.min(depth, 3);
+
+/** 当前文档是否在这个分组里，用来给分支上的折叠箭头着色 */
+const containsCurrent = (list: DocNavNode[], id: string): boolean =>
+	list.some((node) =>
+		node.type === 'doc' ? node.doc.id === id : containsCurrent(node.children, id),
+	);
+
+let leafNo = 0;
+---
+
+<ul class="doc-tree" data-depth={depthKey}>
+	{
+		nodes.map((node) => {
+			if (node.type === 'doc') {
+				leafNo += 1;
+				return (
+					<li>
+						<a
+							class="doc-link"
+							href={docHref(node.doc)}
+							aria-current={node.doc.id === currentId ? 'page' : undefined}
+						>
+							<span class="doc-no" aria-hidden="true">
+								{String(leafNo).padStart(2, '0')}
+							</span>
+							<span class="doc-label" data-tooltip={node.label}>{node.label}</span>
+						</a>
+					</li>
+				);
+			}
+
+			if (node.children.length === 0) {
+				return (
+					<li>
+						<span class="doc-text" data-tooltip={node.label}>{node.label}</span>
+					</li>
+				);
+			}
+
+			return (
+				<li>
+					<details
+						class:list={['doc-group', { 'is-current': containsCurrent(node.children, currentId) }]}
+						open
+						data-nav-group
+					>
+						<summary class="doc-group-summary">
+							<svg class="doc-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+								<path
+									d="m6 3 5 5-5 5"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							<span class="doc-group-label" data-tooltip={node.label}>{node.label}</span>
+						</summary>
+						<DocNavTree nodes={node.children} currentId={currentId} depth={depth + 1} />
+					</details>
+				</li>
+			);
+		})
+	}
+</ul>
+
+<style>
+	.doc-tree {
+		/* 每层自己的字号 / 颜色，子层通过 data-depth 覆盖 */
+		--nav-group-size: var(--t-ui);
+		--nav-group-color: var(--c-ink);
+		--nav-link-size: var(--t-small);
+		--nav-link-color: var(--c-muted);
+
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.doc-tree[data-depth='1'] {
+		--nav-group-size: var(--t-small);
+		--nav-group-color: var(--c-muted);
+	}
+
+	.doc-tree[data-depth='2'] {
+		--nav-group-size: var(--t-small);
+		--nav-group-color: var(--c-quiet);
+		--nav-link-color: var(--c-quiet);
+	}
+
+	.doc-tree[data-depth='3'] {
+		--nav-group-size: var(--t-meta);
+		--nav-group-color: var(--c-quiet);
+		--nav-link-size: var(--t-meta);
+		--nav-link-color: var(--c-quiet);
+	}
+
+	/* 子层靠缩进 + 左侧细线表达层级 */
+	.doc-tree .doc-tree {
+		margin: 0.15rem 0 0.3rem 0.55rem;
+		padding-left: 0.55rem;
+		border-left: 1px solid var(--c-line);
+	}
+
+	.doc-link,
+	.doc-group-summary {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.45rem;
+		padding: 0.26rem 0.55rem;
+		border-left: 2px solid transparent;
+		border-radius: var(--r-sm);
+		transition:
+			color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+	}
+
+	.doc-link {
+		font-size: var(--nav-link-size);
+		color: var(--nav-link-color);
+		text-decoration: none;
+	}
+
+	.doc-link:hover {
+		color: var(--c-ink);
+		background: var(--c-soft);
+	}
+
+	.doc-link[aria-current='page'] {
+		border-left-color: var(--c-accent);
+		color: var(--c-accent);
+		font-weight: var(--w-medium);
+	}
+
+	.doc-link:focus-visible,
+	.doc-group-summary:focus-visible {
+		outline: 2px solid var(--c-accent);
+		outline-offset: 2px;
+	}
+
+	.doc-no {
+		flex: 0 0 auto;
+		color: var(--c-quiet);
+		font-family: var(--font-mono);
+		font-size: var(--t-meta);
+		font-variant-numeric: tabular-nums;
+		line-height: var(--lh-dense);
+	}
+
+	.doc-link[aria-current='page'] .doc-no {
+		color: inherit;
+	}
+
+	/* 链接 / 分组标题 / 纯文本都做两行截断；完整文本由 data-tooltip 在 hover / focus 时立即展示 */
+	.doc-label,
+	.doc-group-label,
+	.doc-text {
+		display: -webkit-box;
+		min-width: 0;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+		white-space: normal;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+	}
+
+	/* ---------- 纯文本分组：标题即折叠开关 ---------- */
+
+	.doc-group-summary {
+		font-size: var(--nav-group-size);
+		font-weight: var(--w-medium);
+		color: var(--nav-group-color);
+		cursor: pointer;
+		user-select: none;
+		list-style: none;
+	}
+
+	.doc-group-summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.doc-group-summary:hover {
+		background: var(--c-soft);
+	}
+
+	.doc-chevron {
+		flex: 0 0 auto;
+		width: 0.72em;
+		height: 0.72em;
+		/* 和第一行文字对齐，而不是整块垂直居中 */
+		margin-top: 0.3em;
+		color: var(--c-quiet);
+		transition: transform var(--dur-fast) var(--ease);
+	}
+
+	.doc-group[open] > .doc-group-summary .doc-chevron {
+		transform: rotate(90deg);
+	}
+
+	/* 当前文档所在分支：只把箭头染成强调色，避免整栏过花 */
+	.doc-group.is-current > .doc-group-summary .doc-chevron {
+		color: var(--c-accent);
+	}
+
+	/* ---------- 纯展示文本：不响应点击 ---------- */
+
+	.doc-text {
+		padding: 0.26rem 0.55rem;
+		border-left: 2px solid transparent;
+		font-size: var(--nav-link-size);
+		color: var(--nav-link-color);
+	}
+</style>

@@ -329,3 +329,26 @@ html.theme-vt .prose {
 	/* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
 	white-space: nowrap;
 }
+
+/* ---------- 全局悬浮提示 ----------
+ * 由 src/scripts/tooltip.ts 控制显隐；替代原生 title，hover 立即出现。
+ * fixed 定位 + body 挂载，避免被侧栏 / 大纲的 overflow 裁切。
+ */
+.ui-tooltip {
+	position: fixed;
+	z-index: 1000;
+	max-width: min(24rem, calc(100vw - 2rem));
+	padding: 0.4rem 0.55rem;
+	border-radius: var(--r-sm);
+	background: var(--c-ink);
+	color: var(--c-bg);
+	font-size: var(--t-small);
+	line-height: var(--lh-dense);
+	box-shadow: var(--shadow-soft);
+	overflow-wrap: anywhere;
+	pointer-events: none;
+}
+
+.ui-tooltip[hidden] {
+	display: none;
+}

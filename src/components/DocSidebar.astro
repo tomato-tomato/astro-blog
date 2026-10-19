@@ -1,49 +1,39 @@
 ---
 /*
- * 文档版式的左侧目录 —— 独立组件，列的是**当前这本文档册里的文档**，
- * 不是当前文章的小标题。
+ * 文档版式的左侧目录 —— 独立组件。
  *
- * 一册文档 = src/content/docs/<文档册>/ 下的全部文档，顺序由每篇的 order 决定；
- * 顶部有「总览」链接回到 /docs/<文档册>/（册目录页）。
- * 整块是 <details>，窄屏折叠、桌面端常开。
+ * 目录内容来自 src/content/docs/<文档册>/_nav.yaml：posts.ts 解析成 { title, items }
+ * 后传进来。title 是顶部总标题，只渲染成纯文本；层级、缩进、折叠都由
+ * DocNavTree 递归渲染。
  *
- * 后续对左侧目录的交互 / 信息层级优化都应该落在这个组件里，
+ * 本组件只负责外层容器、总标题、「总览」入口和窄屏折叠。
+ * 后续对左侧目录的交互 / 信息层级优化都应该落在这里或 DocNavTree，
  * 不要把它重新写回 DocPage。
  */
-import { docHref, type Doc } from '../lib/posts';
+import DocNavTree from './DocNavTree.astro';
+import type { DocNav } from '../lib/doc-nav';
 
 interface Props {
 	bookName: string;
-	pages: Doc[];
+	/** 已校验、已组装的目录（总标题 + 树） */
+	nav: DocNav;
 	currentId: string;
 	homeHref: string;
 }
 
-const { bookName, pages, currentId, homeHref } = Astro.props;
+const { bookName, nav, currentId, homeHref } = Astro.props;
 ---
 
 {
-	pages.length > 0 && (
+	nav.items.length > 0 && (
 		<details class="doc-nav doc-sidebar" open data-book={bookName} data-doc-sidebar>
 			<summary class="doc-nav-summary">{bookName} · 目录</summary>
-			<nav class="doc-nav-body" aria-label={`${bookName} 文档目录`}>
+			<nav class="doc-nav-body" aria-label={`${bookName} · 目录`}>
 				<a class="doc-nav-home" href={homeHref}>
 					<span aria-hidden="true">←</span> {bookName} · 总览
 				</a>
-				<ol class="doc-list">
-					{pages.map((doc, i) => (
-						<li>
-							<a
-								href={docHref(doc)}
-								title={doc.data.title}
-								aria-current={doc.id === currentId ? 'page' : undefined}
-							>
-								<span class="doc-no">{String(i + 1).padStart(2, '0')}</span>
-								<span class="doc-title">{doc.data.title}</span>
-							</a>
-						</li>
-					))}
-				</ol>
+				<p class="doc-nav-title">{nav.title}</p>
+				<DocNavTree nodes={nav.items} currentId={currentId} />
 			</nav>
 		</details>
 	)
@@ -59,9 +49,20 @@ const { bookName, pages, currentId, homeHref } = Astro.props;
 		display: none;
 	}
 
+	/* 顶部总标题：纯文本，不参与折叠；比第一层分组再大一档 */
+	.doc-nav-title {
+		margin: 0 0 0.5rem;
+		padding: 0 0.55rem;
+		color: var(--c-ink);
+		font-size: var(--t-body);
+		font-weight: var(--w-medium);
+		line-height: var(--lh-tight);
+		overflow-wrap: anywhere;
+	}
+
 	.doc-nav-home {
 		display: block;
-		margin-bottom: 0.6rem;
+		margin-bottom: 0.25rem;
 		padding: 0.25rem 0.55rem;
 		border-radius: var(--r-sm);
 		color: var(--c-muted);
@@ -75,53 +76,6 @@ const { bookName, pages, currentId, homeHref } = Astro.props;
 	.doc-nav-home:hover {
 		color: var(--c-accent);
 		background: var(--c-soft);
-	}
-
-	.doc-list {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.doc-list a {
-		display: flex;
-		gap: 0.45rem;
-		padding: 0.25rem 0.55rem;
-		border-left: 2px solid transparent;
-		color: var(--c-muted);
-		text-decoration: none;
-		transition:
-			color var(--dur-fast) var(--ease),
-			border-color var(--dur-fast) var(--ease);
-	}
-
-	.doc-list a:hover {
-		color: var(--c-ink);
-	}
-
-	.doc-list a[aria-current='page'] {
-		border-left-color: var(--c-accent);
-		color: var(--c-accent);
-		font-weight: var(--w-medium);
-	}
-
-	.doc-no {
-		flex: 0 0 auto;
-		color: var(--c-quiet);
-		font-family: var(--font-mono);
-		font-size: var(--t-meta);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.doc-list a[aria-current='page'] .doc-no {
-		color: inherit;
-	}
-
-	.doc-title {
-		min-width: 0;
-		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
 	}
 
 	/* ---------- 桌面端：吸顶，右侧细线分隔 ---------- */

@@ -84,6 +84,14 @@ export function initDocReader(options: DocReaderOptions = {}): void {
 			if (new URL(a.href).pathname === pathname) a.setAttribute('aria-current', 'page');
 			else a.removeAttribute('aria-current');
 		}
+
+		// 分支箭头的强调色跟着当前文档走（左栏本身不替换）
+		for (const group of shell.querySelectorAll<HTMLDetailsElement>('.doc-group')) {
+			const active = [...group.querySelectorAll<HTMLAnchorElement>('a')].some(
+				(link) => new URL(link.href).pathname === pathname,
+			);
+			group.classList.toggle('is-current', active);
+		}
 	};
 
 	const swap = async (href: string, push: boolean) => {

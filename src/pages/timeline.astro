@@ -97,7 +97,7 @@ function formatDay(d: Date): string {
 																class="timeline-item-tags"
 															/>
 														</span>
-														<span class="timeline-summary">{post.data.description}</span>
+														<span class="timeline-summary" data-tooltip={post.data.description}>{post.data.description}</span>
 													</span>
 													<time class="timeline-date" datetime={post.data.pubDate.toISOString()}>
 														{formatDay(post.data.pubDate)}

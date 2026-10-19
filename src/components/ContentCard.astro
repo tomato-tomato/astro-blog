@@ -62,10 +62,10 @@ const showTags = maxTags > 0 && tags.length > 0;
 			)
 		}
 		<div class="content-card-body">
-			<h3 class="content-card-title" title={title}>{title}</h3>
+			<h3 class="content-card-title" data-tooltip={title}>{title}</h3>
 			{
 				!hideDescription && description && (
-					<p class="content-card-desc" title={description}>
+					<p class="content-card-desc" data-tooltip={description}>
 						{description}
 					</p>
 				)
@@ -140,7 +140,7 @@ const showTags = maxTags > 0 && tags.length > 0;
 		font-weight: var(--w-bold);
 		line-height: 1.35;
 		color: var(--c-ink);
-		/* 标题最多两行，超了省略（完整文本走 title 提示） */
+		/* 标题最多两行，超了省略（完整文本走 data-tooltip 提示） */
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
@@ -157,7 +157,7 @@ const showTags = maxTags > 0 && tags.length > 0;
 		font-size: var(--t-small);
 		line-height: var(--lh-dense);
 		color: var(--c-muted);
-		/* 摘要只留一行，hover 出全文 */
+		/* 摘要只留一行，hover 用 data-tooltip 出全文 */
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 1;

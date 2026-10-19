@@ -24,7 +24,7 @@ import AvatarImage from '../assets/avatar.svg';
 			<span class="site-avatar">
 				<img class="illustration-img" src={AvatarImage.src} alt="" width={754} height={800} />
 			</span>
-			<span class="site-wordmark">{SITE_TITLE}</span>
+			<span class="site-wordmark" data-tooltip={SITE_TITLE}>{SITE_TITLE}</span>
 		</a>
 
 		<Search />
@@ -174,13 +174,14 @@ import AvatarImage from '../assets/avatar.svg';
 			height: 30px;
 		}
 
-		/* 站点名可能很长，窄屏截断（display:block 才能让 ellipsis 生效） */
+		/* 站点名可能很长，窄屏截断；完整文本走全局 data-tooltip */
 		.site-wordmark {
 			display: block;
 			min-width: 0;
 			max-width: 6.5rem;
 			overflow: hidden;
 			font-size: 1rem;
+			white-space: nowrap;
 			text-overflow: ellipsis;
 		}
 

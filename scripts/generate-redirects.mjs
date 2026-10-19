@@ -21,6 +21,9 @@ async function walk(dir) {
 	const files = [];
 
 	for (const entry of entries) {
+		// 下划线开头的是册级配置（_book.md 等），不是文档正文，不生成重定向
+		if (entry.name.startsWith('_')) continue;
+
 		const full = path.join(dir, entry.name);
 		if (entry.isDirectory()) files.push(...(await walk(full)));
 		else if (/\.(md|mdx)$/.test(entry.name)) files.push(full);

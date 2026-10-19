@@ -1,9 +1,9 @@
 ---
 # 文档册的展示信息。
 # /docs/ 的文档册卡片、册目录页、分类页的文档入口共用这里的标题、封面和简介。
-# 想换封面就改 heroImage（路径相对本文件）。
+# 以 _ 开头，不会被 docs 集合当成正文；想换封面就改 heroImage（路径相对本文件）。
 title: '文档'
 description: '按章节顺序整理的项目文档，涵盖 Markdown 写作规范与 MDX 用法，方便系统阅读。'
-heroImage: '../../assets/blog-placeholder-about.jpg'
+heroImage: '../../../assets/blog-placeholder-about.jpg'
 order: 1
 ---

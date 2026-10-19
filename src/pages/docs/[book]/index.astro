@@ -50,7 +50,7 @@ const { title, description } = book.meta.data;
 							<span class="doc-index-no">{String(i + 1).padStart(2, '0')}</span>
 							<span class="doc-index-main">
 								<span class="doc-index-title">{doc.data.title}</span>
-								<span class="doc-index-desc">{doc.data.description}</span>
+								<span class="doc-index-desc" data-tooltip={doc.data.description}>{doc.data.description}</span>
 								<span class="doc-index-date">
 									<FormattedDate date={doc.data.pubDate} />
 								</span>
