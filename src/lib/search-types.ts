@@ -14,7 +14,7 @@ export interface SearchEntry {
 	description: string;
 	/** 普通文章的分类；文档为空 */
 	category?: string;
-	/** 文档所属的书；文章为空 */
+	/** 文档所属的文档册；文章为空 */
 	book?: string;
 	tags: string[];
 	date: string;

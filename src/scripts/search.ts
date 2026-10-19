@@ -102,7 +102,7 @@ export function initSearch(): void {
 			kind.className = `search-result-kind is-${item.kind}`;
 			kind.textContent = item.kind === 'doc' ? '文档' : '文章';
 
-			// 文档默认只显示类型与日期；有另一本书时补上书名，避免只看到「文档」
+			// 文档默认只显示类型与日期；属于别的文档册时补上册名，避免只看到「文档」
 			const bookLabel =
 				item.kind === 'doc' && item.book && item.book !== '文档' ? item.book : undefined;
 			const detail = [item.kind === 'doc' ? bookLabel : item.category, item.date]

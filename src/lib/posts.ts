@@ -3,11 +3,11 @@
  *
  * 三种内容：
  *   - 文章：src/content/blog/<分类>/<文章>.md，blog 集合；
- *   - 文档：src/content/docs/<书>/<篇>.md，docs 集合；
- *   - 书：  src/content/books/<书>.md，books 集合，只存书级展示信息。
+ *   - 文档：src/content/docs/<文档册>/<篇>.md，docs 集合；
+ *   - 文档册：src/content/books/<文档册>.md，books 集合，只存册级展示信息。
  *
  * 约定：
- *   - 文章分类 = 目录；文档所属书 = 文档 id 的第一段。
+ *   - 文章分类 = 目录；文档所属文档册 = 文档 id 的第一段。
  *   - `draft: true` 的内容不出现在列表、RSS、搜索和页面里。
  *   - 文档的集内顺序由 `order` 决定（小的在前），同序再按发布时间。
  *   - 文档与文章是两种并列内容，不互相混入。
@@ -21,6 +21,7 @@ export type Article = CollectionEntry<'blog'>;
 export type Doc = CollectionEntry<'docs'>;
 export type Book = CollectionEntry<'books'>;
 
+/** 一册文档：册名 + 册级元数据 + 册内已发布文档（已按 order 排好） */
 export type DocBook = {
 	name: string;
 	meta: Book;
@@ -36,17 +37,17 @@ export async function getArticles(): Promise<Article[]> {
 	return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
-/** 全部已发布文档，按发布时间倒序（搜索索引用；书内顺序走 getDocBooks） */
+/** 全部已发布文档，按发布时间倒序（搜索索引用；册内顺序走 getDocBooks） */
 export async function getAllDocs(): Promise<Doc[]> {
 	const docs = await getCollection('docs', ({ data }) => !data.draft);
 	return docs.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
-/** 文档 id 的第一段就是书的名字：`文档/markdown-style-guide` → `文档` */
+/** 文档 id 的第一段就是文档册的名字：`文档/markdown-style-guide` → `文档` */
 export function getDocBookName(doc: Doc): string {
 	const slash = doc.id.indexOf('/');
 	if (slash === -1) {
-		throw new Error(`文档「${doc.id}」必须放在 src/content/docs/<书>/ 下。`);
+		throw new Error(`文档「${doc.id}」必须放在 src/content/docs/<文档册>/ 下。`);
 	}
 	return doc.id.slice(0, slash);
 }
@@ -64,12 +65,12 @@ function groupDocs(docs: Doc[]): Map<string, Doc[]> {
 }
 
 /**
- * 全部文档集：按书分组，并关联 books 集合里的书级元数据。
+ * 全部文档册：按文档册分组，并关联 books 集合里的册级元数据。
  *
  * 构建期校验：
- *   - 有文档目录就必须有对应的 books/<书>.md；
- *   - 有书级元数据就必须有对应的文档目录；
- *   - 每本书至少有一篇已发布文档，否则不会出现在 /docs/。
+ *   - 有文档目录就必须有对应的 books/<文档册>.md；
+ *   - 有册级元数据就必须有对应的文档目录；
+ *   - 每册至少有一篇已发布文档，否则不会出现在 /docs/。
  */
 export async function getDocBooks(): Promise<DocBook[]> {
 	const [allDocs, metas] = await Promise.all([
@@ -84,7 +85,7 @@ export async function getDocBooks(): Promise<DocBook[]> {
 	const missingMeta = [...allGroups.keys()].filter((name) => !metaById.has(name));
 	if (missingMeta.length > 0) {
 		throw new Error(
-			`文档集缺少书级元数据：${missingMeta.join('、')}。` +
+			`文档册缺少册级元数据：${missingMeta.join('、')}。` +
 				`请创建 ${missingMeta.map((name) => `src/content/books/${name}.md`).join('、')}。`,
 		);
 	}
@@ -92,8 +93,8 @@ export async function getDocBooks(): Promise<DocBook[]> {
 	const orphanMeta = metas.filter((meta) => !allGroups.has(meta.id));
 	if (orphanMeta.length > 0) {
 		throw new Error(
-			`书级元数据没有对应的文档目录：${orphanMeta.map((meta) => meta.id).join('、')}。` +
-				`请在 src/content/docs/<书>/ 下添加文档，或删除多余的 books 文件。`,
+			`册级元数据没有对应的文档目录：${orphanMeta.map((meta) => meta.id).join('、')}。` +
+				`请在 src/content/docs/<文档册>/ 下添加文档，或删除多余的 books 文件。`,
 		);
 	}
 
@@ -121,21 +122,21 @@ export function postHref(post: Article): string {
 	return `/blog/${post.id}/`;
 }
 
-/** 文档链接：id 已含书名，直接拼到 /docs/ 下 */
+/** 文档链接：id 已含文档册名，直接拼到 /docs/ 下 */
 export function docHref(doc: Doc): string {
 	return `/docs/${doc.id}/`;
 }
 
-/** 书目录链接 */
+/** 文档册目录页链接 */
 export function bookHref(book: string): string {
 	return `/docs/${book}/`;
 }
 
-/** 书卡链接：直达第一篇文档；空书在数据层就报错 */
+/** 文档册入口链接：直达册内第一篇文档；空册在数据层就报错 */
 export function docBookHref(book: DocBook): string {
 	const first = book.docs[0];
 	if (!first) {
-		throw new Error(`文档集「${book.name}」没有任何已发布文档，无法生成入口链接。`);
+		throw new Error(`文档册「${book.name}」没有任何已发布文档，无法生成入口链接。`);
 	}
 	return docHref(first);
 }

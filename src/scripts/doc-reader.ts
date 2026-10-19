@@ -104,7 +104,7 @@ export function initDocReader(options: DocReaderOptions = {}): void {
 				return;
 			}
 
-			// 跨文档集（换了另一本书）也整页跳，左栏才对得上
+			// 跨文档册（跳到另一本文档册）也整页跳，左栏才对得上
 			const curNav = shell.querySelector<HTMLElement>('.doc-nav');
 			const nextNav = nextShell.querySelector<HTMLElement>('.doc-nav');
 			if (!curNav || !nextNav || curNav.dataset.book !== nextNav.dataset.book) {

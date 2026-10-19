@@ -2,6 +2,9 @@
 /*
  * 文章 / 文档共用的正文块：封面 + 标题元信息 + 正文插槽。
  *
+ * 元信息固定两段时间：「发布于」取 pubDate，「最后修改于」取 updatedDate，
+ * frontmatter 没写 updatedDate 时退回发布时间，保证每篇文章和文档都有修改时间。
+ *
  * 只负责「一篇文章长什么样」，不关心页头、左右栏和 URL。
  * BlogPost 与 DocPage 各自决定外层网格，再把正文放进这里，
  * 避免两种版式复制同一套 typography。
@@ -15,6 +18,7 @@ import TagList from './TagList.astro';
 interface Props {
 	title: string;
 	pubDate: Date;
+	/** 有更新就填这里；没有时最后修改时间退回发布时间 */
 	updatedDate?: Date;
 	heroImage?: ImageMetadata;
 	/** 文章分类；文档不传 */
@@ -30,6 +34,9 @@ const {
 	category,
 	tags = [],
 } = Astro.props;
+
+/** 文章页和文档页都要展示最后修改时间，没写 updatedDate 就用发布时间 */
+const lastModified = updatedDate ?? pubDate;
 ---
 
 <article class="article-main">
@@ -45,14 +52,12 @@ const {
 		<h1 class="article-title">{title}</h1>
 		<div class="article-meta">
 			{category && <CategoryBadge name={category} />}
-			<FormattedDate date={pubDate} />
-			{
-				updatedDate && (
-					<span class="article-updated">
-						更新于 <FormattedDate date={updatedDate} />
-					</span>
-				)
-			}
+			<span class="article-published">
+				发布于 <FormattedDate date={pubDate} />
+			</span>
+			<span class="article-updated">
+				最后修改于 <FormattedDate date={lastModified} />
+			</span>
 		</div>
 		{tags.length > 0 && <TagList tags={tags} class="article-tags" />}
 	</header>
@@ -106,6 +111,11 @@ const {
 		margin-top: 1rem;
 		font-size: var(--t-meta);
 		color: var(--c-quiet);
+	}
+
+	.article-published,
+	.article-updated {
+		white-space: nowrap;
 	}
 
 	.article-updated {

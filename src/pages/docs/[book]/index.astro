@@ -1,6 +1,6 @@
 ---
 /*
- * 单本书的目录页：/docs/<书>/
+ * 单册文档的目录页：/docs/<文档册>/
  *
  * 文档页左栏的「总览」指向这里。
  * 顺序由每篇文档 frontmatter 的 order 决定（小的在前），
@@ -35,7 +35,7 @@ const { title, description } = book.meta.data;
 	<main>
 		<PageHeader
 			title={title}
-			meta={`文档集 · 共 ${book.docs.length} 篇`}
+			meta={`文档册 · 共 ${book.docs.length} 篇`}
 			backHref="/docs"
 			backText="全部文档"
 		/>

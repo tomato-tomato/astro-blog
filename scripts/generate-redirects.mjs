@@ -2,8 +2,8 @@
  * 构建后生成 Cloudflare Workers Static Assets 的 dist/_redirects。
  *
  * 迁移规则：
- *   /blog/<书>/<篇>/      → /docs/<书>/<篇>/   301
- *   /categories/<书>/     → /docs/<书>/        301
+ *   /blog/<文档册>/<篇>/  → /docs/<文档册>/<篇>/   301
+ *   /categories/<文档册>/ → /docs/<文档册>/         301
  *
  * 中文路径直接写原文：Cloudflare 会按 URL 规范化匹配，wrangler 也能正确解析；
  * 带不带尾斜杠各一条，以兼容不同来源的旧链接。当前文档量远低于 Cloudflare 的

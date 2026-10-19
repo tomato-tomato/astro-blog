@@ -1,10 +1,10 @@
 ---
 /*
- * 全部文档集：/docs/
+ * 全部文档册：/docs/
  *
- * 每本书 = src/content/docs/<书>/ + src/content/books/<书>.md。
- * 卡片展示书级元数据，再列前 4 篇文档的简介，整卡直接进入第一篇；
- * 完整目录在 /docs/<书>/，从文档页左栏的「总览」进入。
+ * 一册文档 = src/content/docs/<文档册>/ + src/content/books/<文档册>.md。
+ * 卡片只展示 books 元数据里的标题、封面和简介，不再罗列册内每篇文档的摘要；
+ * 整卡直达第一篇文档，完整目录在 /docs/<文档册>/，从文档页左栏的「总览」进入。
  */
 import { Image } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -15,18 +15,15 @@ import { docBookHref, getDocBooks } from '../../lib/posts';
 const books = await getDocBooks();
 const total = books.reduce((n, book) => n + book.docs.length, 0);
 
-// 只有一本书时，总入口直接沿用这本书的标题 / 简介；
-// 多本书时用中性的「文档」作为页面标题。
+// 只有一册文档时，总入口直接沿用这一册的标题 / 简介；
+// 多册时用中性的「文档」作为页面标题。
 const pageTitle = books.length === 1 ? books[0].meta.data.title : '文档';
 const pageDescription = books.length === 1 ? books[0].meta.data.description : SITE_DESCRIPTION;
 ---
 
 <BaseLayout title={`${pageTitle} | ${SITE_TITLE}`} description={pageDescription}>
 	<main>
-		<PageHeader
-			title={pageTitle}
-			meta={`${books.length} 本书 · 共 ${total} 篇文档`}
-		/>
+		<PageHeader title={pageTitle} meta={`${books.length} 本文档册 · 共 ${total} 篇文档`} />
 
 		{
 			books.length > 0 ? (
@@ -35,11 +32,11 @@ const pageDescription = books.length === 1 ? books[0].meta.data.description : SI
 						const { title, description, heroImage } = book.meta.data;
 						return (
 							<li>
-								{/* 整卡直达第一篇文档，省掉中间的文章清单页 */}
+								{/* 整卡直达第一篇文档，省掉中间的文档清单页 */}
 								<a
 									class="book-card"
 									href={docBookHref(book)}
-									aria-label={`${title} 文档集，共 ${book.docs.length} 篇，从第一篇开始阅读`}
+									aria-label={`${title} 文档册，共 ${book.docs.length} 篇，从第一篇开始阅读`}
 								>
 									{heroImage && (
 										<div class="book-card-media">
@@ -56,13 +53,6 @@ const pageDescription = books.length === 1 ? books[0].meta.data.description : SI
 												{description}
 											</p>
 										)}
-										<ul class="book-card-summaries">
-											{book.docs.slice(0, 4).map((doc) => (
-												<li class="book-card-summary" title={doc.data.description}>
-													{doc.data.description}
-												</li>
-											))}
-										</ul>
 									</div>
 								</a>
 							</li>
@@ -71,8 +61,8 @@ const pageDescription = books.length === 1 ? books[0].meta.data.description : SI
 				</ul>
 			) : (
 				<p>
-					还没有文档集。在 <code>src/content/docs/&lt;书&gt;/</code> 添加文档，并在
-					<code>src/content/books/&lt;书&gt;.md</code> 添加书级元数据即可。
+					还没有文档册。在 <code>src/content/docs/&lt;文档册&gt;/</code> 添加文档，并在
+					<code>src/content/books/&lt;文档册&gt;.md</code> 添加文档册元数据即可。
 				</p>
 			)
 		}
@@ -155,28 +145,5 @@ const pageDescription = books.length === 1 ? books[0].meta.data.description : SI
 		color: var(--c-quiet);
 		font-size: var(--t-meta);
 		white-space: nowrap;
-	}
-
-	.book-card-summaries {
-		display: grid;
-		gap: 0.5rem;
-		margin: 0.8rem 0 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	/* 两行截断；不足两行的也占满两行高度，卡片列表看起来才整齐 */
-	.book-card-summary {
-		display: -webkit-box;
-		overflow: hidden;
-		min-height: 2.8em;
-		min-height: 2lh;
-		color: var(--c-muted);
-		font-size: var(--t-small);
-		line-height: var(--lh-dense);
-		overflow-wrap: anywhere;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
 	}
 </style>

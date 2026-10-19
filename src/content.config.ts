@@ -21,8 +21,8 @@ const blog = defineCollection({
 		}),
 });
 
-// 文档正文：src/content/docs/<书>/<篇>.md
-// 书的标识 = id 的第一段；集内顺序由 order 决定（小的在前）。
+// 文档正文：src/content/docs/<文档册>/<篇>.md
+// 文档册的标识 = id 的第一段；册内顺序由 order 决定（小的在前）。
 const docs = defineCollection({
 	loader: glob({ base: "./src/content/docs", pattern: "**/*.{md,mdx}" }),
 	schema: ({ image }) =>
@@ -37,8 +37,8 @@ const docs = defineCollection({
 		}),
 });
 
-// 书级元数据：src/content/books/<书>.md
-// 只用于 /docs/ 的书卡与书目录页，和具体文档正文分开。
+// 文档册元数据：src/content/books/<文档册>.md
+// 只用于 /docs/ 的文档册卡片与册目录页，和具体文档正文分开。
 const books = defineCollection({
 	loader: glob({ base: "./src/content/books", pattern: "**/*.{md,mdx}" }),
 	schema: ({ image }) =>

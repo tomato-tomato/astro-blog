@@ -1,8 +1,8 @@
 ---
 /*
- * 文档集入口卡片。
+ * 文档册入口卡片。
  *
- * 标题 / 封面 / 简介来自 src/content/books/<书>.md，而不是第一篇文档；
+ * 标题 / 封面 / 简介来自 src/content/books/<文档册>.md，而不是第一篇文档；
  * 点击直达第一篇文档，左侧目录会以第一篇为当前项。
  */
 import ContentCard from './ContentCard.astro';
@@ -15,7 +15,7 @@ interface Props {
 const { book } = Astro.props;
 const { title, description, heroImage } = book.meta.data;
 const count = book.docs.length;
-const href = docBookHref(book); // 空文档集会在数据层直接报错
+const href = docBookHref(book); // 空文档册会在数据层直接报错
 const first = book.docs[0]!;
 ---
 
@@ -24,6 +24,6 @@ const first = book.docs[0]!;
 	title={title}
 	description={description}
 	image={heroImage}
-	badge={`文档集 · ${count} 篇`}
+	badge={`文档册 · ${count} 篇`}
 	ariaLabel={`${title}：共 ${count} 篇文档，从《${first.data.title}》开始阅读`}
 />
