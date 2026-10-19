@@ -38,7 +38,8 @@ export function initPage(): void {
 					onSwap() {
 						outline.collect();
 						outline.update();
-						outline.collapseOnNarrow();
+						// 换页后的大纲是新节点，按用户存过的状态重新决定展开 / 收起
+						outline.applyDefaults();
 					},
 				});
 			},

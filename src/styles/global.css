@@ -137,17 +137,24 @@ input {
 	font-size: 16px;
 }
 
+/* 表格：正文是 --t-lead(17px)，表格原来用 --t-small(13px) 掉得太狠，
+   读起来像另一份字号体系。这里降到 --t-ui(14px) 并把行高与内边距给足，
+   表头靠底色区分而不是靠字号区分。margin 是必须的：markdown 渲染出来的
+   table 前后没有任何间距，会和段落贴在一起。 */
 table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: var(--t-small);
+	margin: 1.75em 0;
+	font-size: var(--t-ui);
+	line-height: var(--lh-dense);
 }
 
 th,
 td {
+	padding: 0.6em 0.9em;
 	border: 1px solid var(--c-line);
-	padding: 0.5em 0.75em;
 	text-align: left;
+	vertical-align: top;
 }
 
 th {

@@ -124,6 +124,65 @@ test('左栏按 nav 配置渲染三级目录，并可逐级收起 / 展开', asy
 	expect(await isOpen(generate)).toBe(true);
 });
 
+test('点大纲能跳到对应标题，不会被原地换页逻辑打断', async ({ page }) => {
+	await page.goto('/docs/lathe/file-structure/');
+
+	// 1280 视口下浮动大纲默认收起，先展开再点
+	await page.locator('.outline-summary').click();
+	await expect(page.locator('.outline')).toHaveJSProperty('open', true);
+
+	const link = page.locator('.outline a').nth(3);
+	const href = (await link.getAttribute('href')) ?? '';
+	expect(href).toMatch(/^#/);
+	await expect(page.locator('.article-title')).toHaveText('教程文件结构');
+
+	await link.click();
+
+	// 目标标题应停在页头下方（scroll-margin-top = 页头 56px + 1.5rem = 80px）。
+	// 曾经的回归：锚点导航派发的 popstate 被当成换页，正文被重新替换并 scrollTo(0)。
+	await expect
+		.poll(
+			async () =>
+				page.evaluate((hash) => {
+					const target = document.getElementById(decodeURIComponent(hash.slice(1)));
+					return target ? Math.abs(Math.round(target.getBoundingClientRect().top) - 80) : 9999;
+				}, href),
+			{ message: '点大纲后目标标题没有停在页头下方' },
+		)
+		.toBeLessThanOrEqual(8);
+
+	await expect(page).toHaveURL(/#/);
+	// 换页逻辑没被误触发：标题仍是本篇，也没有留下 loading 标记
+	await expect(page.locator('.article-title')).toHaveText('教程文件结构');
+	await expect(page.locator('main.article-shell[data-loading]')).toHaveCount(0);
+});
+
+test('文档大纲浮动在正文右侧，可收起并记住选择', async ({ page }) => {
+	await page.setViewportSize({ width: 1500, height: 900 });
+	await page.goto('/docs/lathe/file-structure/');
+
+	const outline = page.locator('.outline');
+	// 浮动形态：脱离网格，正文拿回整列宽度
+	await expect(outline).toHaveCSS('position', 'fixed');
+	await expect(outline).toHaveJSProperty('open', true);
+	const articleWidth = await page
+		.locator('.article-main')
+		.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+	expect(articleWidth).toBeGreaterThanOrEqual(800);
+
+	// 收起后开关仍在，正文宽度不受影响
+	await page.locator('.outline-summary').click();
+	await expect(outline).toHaveJSProperty('open', false);
+	await expect(page.locator('.outline-summary')).toBeVisible();
+	expect(
+		await page.locator('.article-main').evaluate((el) => Math.round(el.getBoundingClientRect().width)),
+	).toBeGreaterThanOrEqual(articleWidth);
+
+	// 用户的选择优先于「宽屏默认展开」
+	await page.reload();
+	await expect(outline).toHaveJSProperty('open', false);
+});
+
 test('文档册目录页按 order 列出文档', async ({ page }) => {
 	await page.goto('/docs/lathe/');
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');

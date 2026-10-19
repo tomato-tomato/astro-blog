@@ -4,6 +4,11 @@
  * 不整页跳转：fetch 目标页 → 只替换 .article-main 与 .outline → pushState 同步地址。
  * 这样刷新、分享、前进后退都还是对的那一篇。
  *
+ * ⚠️ 换页只认 **pathname**：大纲用的是 #锚点，浏览器做同文档片段导航时同样会派发
+ * popstate。如果把它当成换页处理，就会 fetch 当前页、替换正文，而 swap 末尾的
+ * scrollTo(0) 会把刚跳过去的滚动位置抹平——表现就是「点大纲只改地址、不跳转」。
+ * 所以这里用 shownPath 记住当前真正展示的是哪一篇，路径没变就什么都不做。
+ *
  * 正文替换后需要让大纲重新收集标题，所以通过 onSwap 注入回调，
  * 避免这个模块反过来依赖 article-outline。
  */
@@ -78,6 +83,8 @@ export function initDocReader(options: DocReaderOptions = {}): void {
 
 	const docNav = shell.querySelector<HTMLElement>('.doc-nav');
 	let busy = false;
+	/** 当前实际展示的那一篇的路径，用来区分「换文档」和「只是滚到某个锚点」 */
+	let shownPath = location.pathname;
 
 	const setCurrent = (pathname: string) => {
 		for (const a of shell.querySelectorAll<HTMLAnchorElement>('.doc-nav a')) {
@@ -139,13 +146,15 @@ export function initDocReader(options: DocReaderOptions = {}): void {
 				curOutline.remove();
 			}
 
+			const path = new URL(href, location.href).pathname;
 			shell.dataset.hasToc = nextShell.dataset.hasToc ?? 'false';
-			setCurrent(new URL(href, location.href).pathname);
+			setCurrent(path);
 
 			syncPageMeta(next, href);
 
 			if (push) history.pushState({ doc: true }, '', href);
 
+			shownPath = path;
 			window.scrollTo({ top: 0 });
 			options.onSwap?.();
 		} catch {
@@ -163,14 +172,20 @@ export function initDocReader(options: DocReaderOptions = {}): void {
 		if (a.target === '_blank' || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
 			return;
 
-		const path = new URL(a.href).pathname;
+		const url = new URL(a.href);
+		// 只动锚点不动路径（例如带 # 的册内链接）：让浏览器原生跳，别拦下来换页
+		if (url.pathname === location.pathname && url.hash) return;
+
 		event.preventDefault();
-		if (path === location.pathname) return;
+		if (url.pathname === location.pathname) return;
 		void swap(a.getAttribute('href') ?? a.href, true);
 	});
 
-	// 浏览器前进 / 后退
+	// 浏览器前进 / 后退：只有路径真的变了才换页。
+	// 点大纲产生的同文档片段导航也会派发 popstate，这里必须放过，否则正文会被
+	// 重新替换、滚动位置被抹平。
 	window.addEventListener('popstate', () => {
+		if (location.pathname === shownPath) return;
 		void swap(location.pathname, false);
 	});
 }

@@ -32,3 +32,27 @@ test('标签、时间轴与 RSS 只收录文章', async ({ page }) => {
 	await expect(page.locator('.timeline-item')).toHaveCount(3);
 	await expect(page.locator('.timeline')).not.toContainText('Lathe 技能使用指南');
 });
+
+test('正文表格字号贴近正文，并与段落之间留出间距', async ({ page }) => {
+	await page.goto('/blog/后端工程/nestjs-module-four-params/');
+
+	const box = page.locator('.prose table').first();
+	await expect(box).toBeVisible();
+
+	const metrics = await box.evaluate((table) => {
+		const cs = getComputedStyle(table);
+		const cell = table.querySelector('td');
+		return {
+			tableFont: parseFloat(cs.fontSize),
+			proseFont: parseFloat(getComputedStyle(table.closest('.prose') as HTMLElement).fontSize),
+			marginTop: parseFloat(cs.marginTop),
+			cellPadding: cell ? parseFloat(getComputedStyle(cell).paddingTop) : 0,
+		};
+	});
+
+	// 曾经表格是 13px 而正文 17px，掉了一整档；现在允许比正文小，但不能超过 4px
+	expect(metrics.tableFont).toBeGreaterThanOrEqual(metrics.proseFont - 4);
+	// markdown 渲染出的 table 原本没有任何上下间距，会和段落贴在一起
+	expect(metrics.marginTop).toBeGreaterThanOrEqual(16);
+	expect(metrics.cellPadding).toBeGreaterThanOrEqual(8);
+});

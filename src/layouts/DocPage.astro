@@ -1,9 +1,10 @@
 ---
 /*
- * 文档阅读页布局：左侧文档册目录 + 正文 + 右侧大纲。
+ * 文档阅读页布局：左侧文档册目录 + 正文，右侧大纲是浮动面板。
  *
  * 左侧目录是独立的 DocSidebar 组件（后续优化只改那里）；
  * 正文与普通文章共用 ArticleBody，避免两套 typography。
+ * 大纲用 ArticleOutline 的 float 形态：贴在视口右侧、可收起，不挤占正文宽度。
  *
  * data-layout="doc" 是客户端原地换页的识别标记，不能删。
  */
@@ -57,37 +58,26 @@ const hasToc = toc.length > 0;
 			<slot />
 		</ArticleBody>
 
-		{hasToc && <ArticleOutline nodes={toc} />}
+		{hasToc && <ArticleOutline nodes={toc} float />}
 	</main>
 </BaseLayout>
 
 <style>
+	/*
+	 * 只有两列：左目录 + 正文。右侧大纲是浮动面板（见 ArticleOutline 的 float 形态），
+	 * 不占网格宽度，所以正文能拿到 .article-main 的完整 50rem 上限。
+	 * data-has-toc 仍然写，供样式与测试判断当前有没有大纲。
+	 */
 	main.article-shell {
 		display: grid;
-		grid-template-columns: 13rem minmax(0, 1fr) 11rem;
+		grid-template-columns: 13rem minmax(0, 1fr);
 		gap: 1rem;
 		align-items: start;
 	}
 
-	main.article-shell[data-has-toc='false'] {
-		grid-template-columns: 13rem minmax(0, 1fr);
-	}
-
-	/* 中等宽度：先让右侧大纲退场，正文别被挤成窄条 */
-	@media (max-width: 1180px) {
-		main.article-shell {
-			grid-template-columns: 13rem minmax(0, 1fr);
-		}
-
-		main.article-shell :global(.outline) {
-			display: none;
-		}
-	}
-
-	/* 窄屏：全部单列，目录折叠块排到正文前 */
+	/* 窄屏：大纲退回文首折叠块，和左目录一起排到正文前面 */
 	@media (max-width: 900px) {
-		main.article-shell,
-		main.article-shell[data-has-toc='false'] {
+		main.article-shell {
 			grid-template-columns: minmax(0, 1fr);
 			gap: 1.5rem;
 		}

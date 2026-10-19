@@ -1,24 +1,33 @@
 ---
 /*
- * 文章大纲（右侧）。
+ * 文章大纲。
  *
- * 桌面端 sticky 吸在视口里，不随页面滚走；窄屏折叠成文首的一个 <details>。
- * 标题过长时单行省略，完整文本 hover 时由 data-tooltip 立即展示。
+ * 两种形态，由 float 属性决定：
+ *   1. 默认（文章版式）：作为正文网格的右列，sticky 吸顶，宽度由网格给；
+ *   2. float（文档版式）：position: fixed 的浮动卡片贴在视口右侧，完全不占正文宽度，
+ *      summary 变成「目录」开关，展开 / 收起状态记进 localStorage（见 article-outline.ts）。
+ *
+ * ≤900px 时两种形态都退回正文上方的折叠块，浮动样式只在 901px 以上生效。
  * 高亮由 src/scripts/article-outline.ts 的滚动监听负责（只认 [data-outline] a）。
  */
 import type { TocNode } from '../lib/toc';
 
 interface Props {
 	nodes: TocNode[];
+	/** 文档版式用浮动面板；文章版式保持占网格右列 */
+	float?: boolean;
 }
 
-const { nodes } = Astro.props;
+const { nodes, float = false } = Astro.props;
 ---
 
 {
 	nodes.length > 0 && (
-		<details class="outline" open data-outline>
-			<summary class="outline-summary">本文目录</summary>
+		<details class:list={['outline', float && 'outline--float']} open data-outline>
+			<summary class="outline-summary">
+				<span class="outline-label-long">本文目录</span>
+				<span class="outline-label-short">目录</span>
+			</summary>
 			<nav class="outline-nav" aria-label="本文目录">
 				<ol class="outline-list">
 					{nodes.map((node) => (
@@ -54,6 +63,11 @@ const { nodes } = Astro.props;
 	}
 
 	.outline-summary {
+		display: none;
+	}
+
+	/* 折叠块用完整标签；浮动胶囊只留两个字，别撑成一长条 */
+	.outline-label-short {
 		display: none;
 	}
 
@@ -101,7 +115,7 @@ const { nodes } = Astro.props;
 		font-size: var(--t-meta);
 	}
 
-	/* ---------- 桌面端吸顶 ---------- */
+	/* ---------- 桌面端吸顶（非浮动形态）---------- */
 	.outline {
 		position: sticky;
 		top: calc(var(--header-h) + 1.5rem);
@@ -118,6 +132,88 @@ const { nodes } = Astro.props;
 	.outline::-webkit-scrollbar-thumb {
 		border-radius: 999px;
 		background: var(--c-line);
+	}
+
+	/* ---------- 浮动形态：文档版式专用，≥901px 才浮动 ---------- */
+	@media (min-width: 901px) {
+		.outline--float {
+			position: fixed;
+			/* 贴视口右缘：越靠边越不会压到正文文字 */
+			top: calc(var(--header-h) + 3rem);
+			right: 2.75rem;
+			z-index: 20; /* 内容之上、页头(50) / 搜索(60) / 提示(1000) 之下 */
+			width: 13.5rem;
+			max-height: calc(100svh - var(--header-h) - 2rem);
+			padding: 0.3rem;
+			border: 1px solid var(--c-line);
+			border-radius: var(--r-lg);
+			background: color-mix(in srgb, var(--c-bg) 90%, transparent);
+			box-shadow: 0 14px 34px -20px rgb(15 15 15 / 55%);
+			backdrop-filter: blur(6px);
+		}
+
+		/* 收起时只剩一个胶囊按钮，别留一块空底板 */
+		.outline--float:not([open]) {
+			width: auto;
+			padding: 0;
+			border-color: transparent;
+			background: transparent;
+			box-shadow: none;
+			backdrop-filter: none;
+			overflow: visible;
+		}
+
+		.outline--float .outline-summary {
+			display: block;
+			padding: 0.35rem 0.55rem;
+			border-radius: var(--r-md);
+			color: var(--c-ink);
+			font-size: var(--t-ui);
+			list-style: none;
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.outline--float .outline-label-long {
+			display: none;
+		}
+
+		.outline--float .outline-label-short {
+			display: inline;
+		}
+
+		.outline--float .outline-summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.outline--float:not([open]) .outline-summary {
+			padding: 0.35rem 0.7rem;
+			border: 1px solid var(--c-line);
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--c-bg) 88%, transparent);
+			box-shadow: 0 8px 22px -16px rgb(15 15 15 / 60%);
+			backdrop-filter: blur(6px);
+		}
+
+		/* 用自绘箭头表示展开状态，不用浏览器那个跑不稳定的三角 */
+		.outline--float .outline-summary::after {
+			content: '▸';
+			display: inline-block;
+			margin-left: 0.4rem;
+			font-size: 1.5em;
+			color: var(--c-quiet);
+			transition: transform var(--dur-fast) var(--ease);
+		}
+
+		.outline--float[open] .outline-summary::after {
+			transform: rotate(90deg);
+		}
+
+		.outline--float .outline-nav {
+			max-height: calc(100svh - var(--header-h) - 5rem);
+			padding: 0.1rem 0.15rem 0.3rem;
+			overflow-y: auto;
+		}
 	}
 
 	/* ---------- 窄屏：折叠成文首的一个 details ---------- */
