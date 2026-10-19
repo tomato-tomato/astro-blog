@@ -3,8 +3,10 @@
  * 文章卡片。列表页 / 分类页 / 标签页 / 首页共用。
  *
  * 只是把 Post 映射到 ContentCard 的中性字段，外观与交互全在 ContentCard 里。
+ * 封面在这里解析：作者写了 heroImage 就用它，否则取按内容 id 生成的封面。
  */
 import ContentCard from './ContentCard.astro';
+import { resolveCover } from '../lib/covers';
 import { getCategory, postHref, type Article } from '../lib/posts';
 
 interface Props {
@@ -30,13 +32,14 @@ const {
 	ariaLabel,
 } = Astro.props;
 const { title, description, pubDate, heroImage, tags } = post.data;
+const cover = resolveCover(post.id, heroImage);
 ---
 
 <ContentCard
 	href={postHref(post)}
 	title={title}
 	description={description}
-	image={heroImage}
+	image={cover}
 	category={getCategory(post)}
 	badge={badge}
 	date={pubDate}

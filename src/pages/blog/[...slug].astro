@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
+import { resolveCover } from '../../lib/covers';
 import { getArticles, getCategory, type Article } from '../../lib/posts';
 
 export async function getStaticPaths() {
@@ -20,6 +21,11 @@ const { post } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
-<BlogPost {...post.data} category={getCategory(post)} headings={headings}>
+<BlogPost
+	{...post.data}
+	heroImage={resolveCover(post.id, post.data.heroImage)}
+	category={getCategory(post)}
+	headings={headings}
+>
 	<Content />
 </BlogPost>

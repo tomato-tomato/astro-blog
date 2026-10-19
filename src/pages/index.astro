@@ -19,12 +19,13 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
 import type { ISourceOptions } from '@tsparticles/engine';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { SITE_TITLE, SITE_DESCRIPTION, HOME_LATEST_COUNT } from '../consts';
 import { getArticles } from '../lib/posts';
 import HeroImage from '../assets/hero.svg';
 
 // 首页只展示普通文章；文档文章归「文档」板块，不在最新文章里混排
-const latest = (await getArticles()).slice(0, 3);
+// 数量由 consts.ts 的 HOME_LATEST_COUNT 决定，避免文章变多后首页被拉长
+const latest = (await getArticles()).slice(0, HOME_LATEST_COUNT);
 
 /* 粒子配色与站点强调色同源（react.dev）。
    这里写的是亮色值，客户端脚本会在挂载后按当前主题覆盖。 */

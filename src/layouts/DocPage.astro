@@ -9,6 +9,7 @@
  */
 import type { Heading } from '../lib/toc';
 import { buildToc } from '../lib/toc';
+import { resolveCover } from '../lib/covers';
 import { bookHref, type Doc, type DocBook } from '../lib/posts';
 import BaseLayout from './BaseLayout.astro';
 import ArticleBody from '../components/ArticleBody.astro';
@@ -23,6 +24,8 @@ interface Props {
 
 const { book, doc, headings = [] } = Astro.props;
 const { title, description, pubDate, updatedDate, heroImage } = doc.data;
+// 封面：作者手写优先，否则用按文档 id 生成的那张
+const cover = resolveCover(doc.id, heroImage);
 
 const toc = buildToc(headings);
 const hasToc = toc.length > 0;
@@ -31,7 +34,7 @@ const hasToc = toc.length > 0;
 <BaseLayout
 	title={title}
 	description={description}
-	image={heroImage}
+	image={cover}
 	type="article"
 	publishedTime={pubDate}
 	modifiedTime={updatedDate ?? pubDate}
@@ -49,7 +52,7 @@ const hasToc = toc.length > 0;
 			title={title}
 			pubDate={pubDate}
 			updatedDate={updatedDate}
-			heroImage={heroImage}
+			heroImage={cover}
 		>
 			<slot />
 		</ArticleBody>

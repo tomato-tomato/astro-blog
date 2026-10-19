@@ -4,8 +4,11 @@
 	"version": "0.0.1",
 	"packageManager": "pnpm@10.11.1",
 	"scripts": {
+		"predev": "node scripts/generate-covers.mjs",
 		"dev": "astro dev",
+		"prebuild": "node scripts/generate-covers.mjs",
 		"build": "astro build && node scripts/generate-redirects.mjs",
+		"gen:covers": "node scripts/generate-covers.mjs",
 		"preview": "astro preview",
 		"check": "astro check",
 		"test:e2e": "playwright test",

@@ -2,6 +2,8 @@
 dist/
 # generated types
 .astro/
+# 构建期自动生成的头图（scripts/generate-covers.mjs）
+src/assets/covers/
 
 # Qoder
 .qoder/

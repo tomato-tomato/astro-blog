@@ -108,9 +108,9 @@
 
 .page-backdrop--grid .backdrop-layer-b {
 	background: radial-gradient(
-		28rem circle at var(--backdrop-pointer-x, 50%) var(--backdrop-pointer-y, 18%),
+		15rem circle at var(--backdrop-pointer-x, 50%) var(--backdrop-pointer-y, 18%),
 		color-mix(in oklab, var(--c-accent) 26%, transparent),
-		transparent 66%
+		transparent 70%
 	);
 }
 
