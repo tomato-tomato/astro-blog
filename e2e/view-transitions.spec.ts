@@ -111,9 +111,15 @@ test('收起的分组在换页后仍保持收起', async ({ page }) => {
 test('脚本加载窗口期里的点击也算数（浮动大纲收起不被覆盖）', async ({ page }) => {
 	await page.setViewportSize({ width: 1500, height: 900 });
 	await page.goto('/docs/lathe/file-structure/');
-	// 不等任何网络空闲：大纲模块是动态 import 的，这次点击很可能落在脚本跑起来之前
+	// 大纲模块是动态 import 的，这次点击可能落在脚本跑起来之前，也可能落在之后：
+	// 两种路径都必须把「收起」记下来，所以这里只等结果，不等某个固定时序
 	await page.locator('.outline-summary').click();
 	await expect(page.locator('.outline')).toHaveJSProperty('open', false);
+	await expect
+		.poll(() => page.evaluate(() => localStorage.getItem('outline-float-open')), {
+			message: '收起状态没有写进 localStorage（窗口期里的点击被丢了）',
+		})
+		.toBe('0');
 
 	await page.reload();
 	await expect(
