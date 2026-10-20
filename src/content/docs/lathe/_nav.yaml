@@ -4,6 +4,8 @@
 title: Lathe 技能
 
 items:
+  - label: 前言
+    doc: introduction
   - label: 开始使用
     children:
       - label: Lathe 是什么

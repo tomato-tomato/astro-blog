@@ -9,24 +9,24 @@ test('文档入口直达首篇，左栏原地换页并同步元信息', async ({
 
 	const bookCard = page.locator('.book-card');
 	await expect(bookCard).toHaveCount(1);
-	await expect(bookCard).toHaveAttribute('href', '/docs/lathe/overview/');
+	await expect(bookCard).toHaveAttribute('href', '/docs/lathe/introduction/');
 	await expect(bookCard.locator('.book-card-title')).toHaveText('Lathe 技能使用指南');
-	await expect(bookCard.locator('.book-card-count')).toHaveText('14 篇');
+	await expect(bookCard.locator('.book-card-count')).toHaveText('15 篇');
 	// 卡片描述只用 books 元数据，不罗列册内每篇文档的摘要
 	await expect(bookCard.locator('.book-card-summary')).toHaveCount(0);
 	await expect(bookCard.locator('.book-card-desc')).toContainText('把 /lathe 的十个操作一次讲清');
 	await bookCard.click();
 
-	await expect(page).toHaveURL(/\/docs\/lathe\/overview\/$/);
+	await expect(page).toHaveURL(/\/docs\/lathe\/introduction\/$/);
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');
 	await expect(page.locator('.article-updated')).toContainText('最后修改于');
 	await expect(page.locator('.doc-nav')).toHaveCount(1);
 	// 左栏文字来自 nav 配置，与文档标题解耦
-	await expect(page.locator('.doc-nav a[aria-current="page"]')).toContainText('Lathe 是什么');
+	await expect(page.locator('.doc-nav a[aria-current="page"]')).toContainText('前言');
 	await expect(page.locator('.outline a')).not.toHaveCount(0);
 
 	const firstCanonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-	expect(firstCanonical).toContain('/docs/lathe/overview/');
+	expect(firstCanonical).toContain('/docs/lathe/introduction/');
 
 	await page.locator('.doc-nav a', { hasText: '下载与安装' }).click();
 	await expect(page).toHaveURL(/\/docs\/lathe\/install\/$/);
@@ -52,8 +52,8 @@ test('文档入口直达首篇，左栏原地换页并同步元信息', async ({
 	);
 
 	await page.goBack();
-	await expect(page).toHaveURL(/\/docs\/lathe\/overview\/$/);
-	await expect(page.locator('.article-title')).toHaveText('Lathe 是什么');
+	await expect(page).toHaveURL(/\/docs\/lathe\/introduction\/$/);
+	await expect(page.locator('.article-title')).toHaveText('前言');
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');
 
 	expect(errors).toEqual([]);
@@ -186,11 +186,12 @@ test('文档大纲浮动在正文右侧，可收起并记住选择', async ({ pa
 test('文档册目录页按 order 列出文档', async ({ page }) => {
 	await page.goto('/docs/lathe/');
 	await expect(page.locator('.site-nav a.active')).toHaveText('文档');
-	await expect(page.locator('.doc-index-title')).toHaveCount(14);
-	await expect(page.locator('.doc-index-title').first()).toHaveText('Lathe 是什么');
-	await expect(page.locator('.doc-index-title').nth(1)).toHaveText('下载与安装');
+	await expect(page.locator('.doc-index-title')).toHaveCount(15);
+	// 前言 order 为 0，所以它既是左栏第一项，也是目录页与册卡片入口的第一篇
+	await expect(page.locator('.doc-index-title').first()).toHaveText('前言');
+	await expect(page.locator('.doc-index-title').nth(1)).toHaveText('Lathe 是什么');
 	await expect(page.locator('.doc-index a').first()).toHaveAttribute(
 		'href',
-		'/docs/lathe/overview/',
+		'/docs/lathe/introduction/',
 	);
 });

@@ -12,7 +12,7 @@ test('分类页只筛选文章，文档独立成块', async ({ page }) => {
 	);
 	await expect(page.locator('.docs-section .content-card-link')).toHaveAttribute(
 		'href',
-		'/docs/lathe/overview/',
+		'/docs/lathe/introduction/',
 	);
 
 	await page.getByRole('button', { name: /前端构建/ }).click();
