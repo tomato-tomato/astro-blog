@@ -114,14 +114,33 @@ export function initArticleOutline(): void {
 		});
 	};
 
-	/* 程序改 open 会派发 toggle，但这些不是用户的选择，不能存进存储。 */
-	const skip = new WeakSet<Element>();
+	/*
+	 * 「这条 toggle 是用户点的还是程序改的」不能靠记名单来配对：
+	 * toggle 事件是排队派发的，连续两次程序改动 + 一次用户改动就会把名单错位，
+	 * 于是把程序行为存成了用户的选择（表现为「记住收起选择」偶发失效）。
+	 * 改成反过来归因 —— 先在 summary 上收到真实输入（pointerdown / 键盘），
+	 * 才认为紧随其后的那次 toggle 出自用户。程序改 open 永远不会带输入事件。
+	 */
+	const userActed = new WeakSet<HTMLDetailsElement>();
 
-	const setOpen = (el: HTMLDetailsElement, next: boolean) => {
-		if (el.open === next) return;
-		skip.add(el);
-		el.open = next;
+	const setOpen = (el: HTMLDetailsElement, next: boolean): void => {
+		if (el.open !== next) el.open = next;
 	};
+
+	const markUserActed = (target: EventTarget | null): void => {
+		const summary = (target as Element | null)?.closest?.('summary');
+		const details = summary?.parentElement;
+		if (details instanceof HTMLDetailsElement) userActed.add(details);
+	};
+
+	document.addEventListener('pointerdown', (e) => markUserActed(e.target), true);
+	document.addEventListener(
+		'keydown',
+		(e) => {
+			if (e.key === ' ' || e.key === 'Enter') markUserActed(document.activeElement);
+		},
+		true,
+	);
 
 	/**
 	 * 折叠块的展开状态：
@@ -170,21 +189,16 @@ export function initArticleOutline(): void {
 		'toggle',
 		(event) => {
 			const el = event.target;
-			if (!(el instanceof HTMLElement)) return;
-			if (skip.has(el)) {
-				skip.delete(el);
-				return;
-			}
 			if (!(el instanceof HTMLDetailsElement)) return;
+			// 只有能归因到真实输入的 toggle 才算用户的选择
+			if (!userActed.has(el)) return;
+			userActed.delete(el);
 
 			if (el.matches('details.outline--float')) {
 				writeStoredBool(FLOAT_KEY, el.open);
 				return;
 			}
-			if (el.matches('.doc-nav[data-book] [data-doc-sidebar], .doc-nav[data-book]')) {
-				const id = navIdOf(el);
-				if (id) writeNavState(id, el.open);
-			} else if (el.matches('[data-nav-group]')) {
+			if (el.matches('.doc-nav[data-book]') || el.matches('[data-nav-group]')) {
 				const id = navIdOf(el);
 				if (id) writeNavState(id, el.open);
 			}
