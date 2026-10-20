@@ -17,7 +17,9 @@ let tip: HTMLDivElement | null = null;
 let current: HTMLElement | null = null;
 
 function getTip(): HTMLDivElement {
-	if (tip) return tip;
+	// 文档页换页（<ClientRouter />）会重建 <body>，缓存的浮层会变成游离节点，
+	// 所以这里检查它还在不在文档里，不在就重挂一个。
+	if (tip?.isConnected) return tip;
 
 	tip = document.createElement('div');
 	tip.className = 'ui-tooltip';

@@ -38,22 +38,46 @@ const {
 	// 这里必须是 is:inline —— Astro 默认会把 <script> 打包成模块并延迟执行，那样一定会闪。
 	(() => {
 		const root = document.documentElement;
-		let theme = null;
-		try {
-			theme = localStorage.getItem('theme');
-		} catch (e) {
-			/* 隐私模式下 localStorage 不可用，走系统偏好即可 */
-		}
-		if (theme !== 'light' && theme !== 'dark') {
-			theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-		}
-		root.dataset.theme = theme;
 
-		const meta = document.getElementById('theme-color');
-		if (meta) meta.setAttribute('content', theme === 'dark' ? '#111315' : '#ffffff');
+		/** 用户存过的优先，没存过听系统的 prefers-color-scheme */
+		const decide = () => {
+			let theme = null;
+			try {
+				theme = localStorage.getItem('theme');
+			} catch {
+				/* 隐私模式下 localStorage 不可用，走系统偏好即可 */
+			}
+			if (theme !== 'light' && theme !== 'dark') {
+				theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+			}
+			return theme;
+		};
+
+		const apply = () => {
+			const theme = decide();
+			root.dataset.theme = theme;
+			const meta = document.getElementById('theme-color');
+			if (meta) meta.setAttribute('content', theme === 'dark' ? '#111315' : '#ffffff');
+		};
+
+		apply();
 
 		// load 之后再打开颜色过渡，避免首屏加载时闪一下
-		window.addEventListener('load', () => root.classList.add('theme-ready'), { once: true });
+		const markReady = () => root.classList.add('theme-ready');
+		if (document.readyState === 'complete') markReady();
+		else window.addEventListener('load', markReady, { once: true });
+
+		/*
+		 * 文档页换页（<ClientRouter />）会把新页面 <html> 上的属性搬到当前节点，
+		 * 于是 data-theme 和 theme-ready 这些**运行时写上去**的属性会被静态 HTML 抹掉 ——
+		 * 表现是暗色模式下点一下左栏就掉回亮色。astro:after-swap 在 DOM 换完、浏览器绘制前
+		 * 派发，这里同步补回来，看不到中间态。theme-color 也是同理：它是个 meta，
+		 * 换页时被新页面的静态值（#ffffff）覆盖，所以一并重设。
+		 */
+		document.addEventListener('astro:after-swap', () => {
+			apply();
+			if (document.readyState === 'complete') markReady();
+		});
 	})();
 </script>
 <!-- 站点图标：来自 src/assets/avatar.svg（undraw_ideas，透明底）。

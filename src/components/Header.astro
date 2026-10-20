@@ -10,6 +10,12 @@
  * 高亮统一由 HeaderLink 按 pathname 首段判断：/docs/... 高亮「文档」，
  * /blog/... 高亮「文章」，不再需要页面传 activeHref 特例。
  * 站点名取 consts.ts 的 SITE_TITLE（当前为「自留地」），改名只改那一处，页脚与 RSS 会跟着变。
+ *
+ * transition:persist 是给文档页换页（<ClientRouter />）用的：换页换的是整个
+ * <body>，页头一旦被换成新节点，搜索框和主题按钮上绑好的监听就跟着没了。
+ * 标了 persist 后 Astro 会把原来这个节点搬进新 body，监听与状态都保留。
+ * 只在文档页之间生效（别的页没引 ClientRouter），而文档页的页头内容完全相同
+ * （高亮恒为「文档」），所以不会把上一篇的高亮状态带过来。
  */
 import HeaderLink from './HeaderLink.astro';
 import ThemeToggle from './ThemeToggle.astro';
@@ -18,7 +24,7 @@ import { SITE_TITLE } from '../consts';
 import AvatarImage from '../assets/avatar.svg';
 ---
 
-<header class="site-header">
+<header class="site-header" transition:persist>
 	<div class="header-inner">
 		<a href="/" class="site-brand">
 			<span class="site-avatar">

@@ -6,7 +6,20 @@
  * 正文与普通文章共用 ArticleBody，避免两套 typography。
  * 大纲用 ArticleOutline 的 float 形态：贴在视口右侧、可收起，不挤占正文宽度。
  *
- * data-layout="doc" 是客户端原地换页的识别标记，不能删。
+ * 文档页之间的「点左栏换正文」由 Astro 自带的 <ClientRouter /> 承担
+ * （原来手写的 src/scripts/doc-reader.ts 已删除）。要点：
+ *   - 只有本页引入 ClientRouter，所以**只有文档页之间**是原地换页；
+ *     从文档页点去文章页 / 从别的页点进来，Astro 检测到目标页没有
+ *     「astro-view-transitions-enabled」这个 meta，会自动整页跳转（源码
+ *     astro/dist/transitions/router.js 里写明的行为），不会换出错版。
+ *   - 换页时 <head> 由 Astro 逐元素 diff 更新，所以 canonical / og:url /
+ *     og:title / twitter:title / <title> 都是对的，不需要手写同步。
+ *   - 同页 #锚点跳转被 Astro 当成页内滚动处理，不会重新取页面
+ *     —— 这正是当年手写版踩过的坑，交给官方实现更稳。
+ *   - 换页后需要重新收集大纲、恢复折叠状态：见 src/scripts/article-outline.ts
+ *     里对 astro:page-load 的监听。
+ *
+ * data-layout="doc" 仍保留：样式与 e2e 都靠它判定文档版式，不能删。
  */
 import type { Heading } from '../lib/toc';
 import { buildToc } from '../lib/toc';
@@ -16,6 +29,8 @@ import BaseLayout from './BaseLayout.astro';
 import ArticleBody from '../components/ArticleBody.astro';
 import ArticleOutline from '../components/ArticleOutline.astro';
 import DocSidebar from '../components/DocSidebar.astro';
+// astro/components 的具名导出里没有 ClientRouter，只能按文件路径引
+import ClientRouter from 'astro/components/ClientRouter.astro';
 
 interface Props {
 	book: DocBook;
@@ -41,6 +56,8 @@ const hasToc = toc.length > 0;
 	modifiedTime={updatedDate ?? pubDate}
 	backdrop="doc"
 >
+	<ClientRouter slot="head" />
+
 	<main class="article-shell" data-layout="doc" data-has-toc={hasToc}>
 		<DocSidebar
 			bookName={book.name}
