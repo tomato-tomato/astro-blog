@@ -62,8 +62,8 @@ AI：（阅读已有教程）
 
 用户：2
 
-AI：（研究 Leader 选举，生成 part-02.md）
-    已添加 part-02.md。可以调用 /lathe 验证 raft-go 验证。
+AI：（研究 Leader 选举，生成 part-02.md，在 H1 之后写入「未验证」状态横幅）
+    已添加 part-02.md（尚未验证）。可以调用 /lathe 验证 raft-go 验证。
 ```
 
 ## 第四步：验证教程
@@ -72,14 +72,16 @@ AI：（研究 Leader 选举，生成 part-02.md）
 用户：/lathe 验证 raft-go
 
 AI：（版本一致性预检：比对锁定版本、配置声明与代码特性，未发现冲突）
-    （在验证工作区 .lathe-verify/ 中逐步执行，运行检查点命令）
+    （改动面预检：changed_interfaces 为空，跳过）
+    （代码块结构预检：fragment 都有文件与接缝说明，exercise 都有参考答案）
+    （在验证工作区 .lathe-verify/ 中逐步执行 runnable 块与检查点命令）
     验证结果：
-    - part-01.md：✓ 通过
-    - part-02.md：✓ 通过
+    - part-01.md：✓ 通过（已移除未验证横幅）
+    - part-02.md：✓ 通过（已移除未验证横幅）
     教程验证全部通过！metadata.json 状态已同步为 verified。
 ```
 
-> 若预检或执行中发现版本冲突（例如示例声明的 edition 与代码语义不匹配），AI 会展示冲突详情和两个修复方案，征得你同意后修复并重新验证。
+> 若预检或执行中发现版本冲突（例如示例声明的 edition 与代码语义不匹配），AI 会展示冲突详情和两个修复方案，征得你同意后修复并重新验证。验证只执行 `runnable` 与 `expected_failure` 块；`fragment` / `exercise` / `text` / `output` 会被跳过，不占步骤号。
 
 ## 第五步：提问和打标签
 

@@ -105,6 +105,7 @@ echo '{"tutorials_base_path": "~/my-tutorials", "tutorial_paths": {}}' > ~/.lath
 │   ├── metadata.json              ← 教程索引（顶部有防误删提醒）
 │   ├── part-01.md                 ← 第一部分
 │   ├── part-02.md                 ← 第二部分（由 /lathe 续写 添加）
+│   ├── research.md                ← 可选归档（接口变更 / 未决问题的历史记录）
 │   ├── verify-result.json         ← 验证结果（由 /lathe 验证 生成）
 │   └── .lathe-verify/             ← 验证工作区（隐藏目录，可安全删除）
 └── voices/                        ← 自定义语气预设（始终位于默认基础目录）

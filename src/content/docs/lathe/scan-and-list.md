@@ -106,10 +106,12 @@ AI 会一次性展示全部结果（不逐条询问），经你确认后才写�
 1. part-01.md — 生成第一个正弦波
 
 共 2 门语言、2 门课程、4 个部分，1 门课程尚未验证。
-技能版本：v0.5.3
+技能版本：v0.5.4
 ```
 
 **单教程详情**：展示标题、主题、编程语言、正文语言、voice、部分列表（含逐部分验证结果）、锁定工具版本、验证结果，并根据状态给出下一步建议（例如未验证 → 提示可以验证）。字段存在时还会展示学习目标（`goal`）、读者水平（`experience_level`）、风格锚点（`style_anchor`）、生成版本（`lathe_version`），以及 `continuity` 摘要的新鲜度——落后时会提醒：下次续写要先重建摘要，属一次性成本。
+
+**内容变更检测（v0.5.4）**：某部分在 `verify-result.json` 里是 `passed`，但该文件的修改时间晚于 `checked_at`，列表就把它标成 _「内容已变更，需重新验证」_，不再显示 `passed`；`changed_interfaces_snapshot` 与当前 `metadata.changed_interfaces` 不一致时，标 _「接口已变更，需重新验证」_。两项判定都只看文件 mtime 和清单副本，**不读正文**；`part-NN-review.md` 复习材料不参与。逐部分状态本身也更细了：`passed` / `failed` / `skipped` / `not_run`。
 
 ### 两条内部约束
 

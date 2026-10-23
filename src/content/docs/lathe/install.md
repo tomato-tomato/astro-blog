@@ -9,10 +9,10 @@ Lathe 是一个可以直接复制到本地技能目录的文件夹，不需要�
 
 ## 1. 下载技能包
 
-到仓库的 [GitHub Releases](https://github.com/tomato-tomato/my-rust-lathe-courses/releases) 页面，下载最新的 `skills` 压缩包（文件名形如 `lathe-0.5.3.zip`，以实际 release 为准），然后解压：
+到仓库的 [GitHub Releases](https://github.com/tomato-tomato/my-rust-lathe-courses/releases) 页面，下载最新的 `skills` 压缩包（文件名形如 `lathe-0.5.4.zip`，以实际 release 为准），然后解压：
 
 ```bash
-unzip lathe-0.5.3.zip -d ./skills-download
+unzip lathe-0.5.4.zip -d ./skills-download
 ```
 
 解压后是一个技能文件夹：

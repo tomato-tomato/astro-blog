@@ -94,9 +94,10 @@ test('左栏按 nav 配置渲染三级目录，并可逐级收起 / 展开', asy
 	);
 
 	// 纯文本节点（版本说明）与链接一样携带完整文本，供截断后提示
+	// 版本号写死是有意的：技能升版后这条会红，提醒整册一起对齐
 	const textNodes = page.locator('.doc-text');
 	await expect(textNodes).toHaveCount(1);
-	await expect(textNodes.first()).toHaveAttribute('data-tooltip', /v0\.5\.3/);
+	await expect(textNodes.first()).toHaveAttribute('data-tooltip', /v0\.5\.4/);
 
 	const daily = groupLabeled('日常操作');
 	const generate = groupLabeled('生成与精进');
